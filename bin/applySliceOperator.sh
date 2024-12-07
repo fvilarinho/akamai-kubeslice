@@ -15,28 +15,28 @@ function checkDependencies() {
   fi
 }
 
-# Applies the manager manifest replacing the placeholders with the correspondent environment variable value.
-function applyManager() {
-  NAMESPACE=kubeslice-controller
+function applySliceOperator() {
+  NAMESPACE=kubeslice-system
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep deployed)
 
   if [ -z "$ALREADY_INSTALLED" ]; then
-    echo "Applying manager..."
+    echo "Applying slice operator..."
 
-    $HELM_CMD install kubeslice-ui \
-                      kubeslice/kubeslice-ui \
+    $HELM_CMD install kubeslice-worker \
+                      kubeslice/kubeslice-worker \
                       -f "$MANIFEST_FILENAME" \
-                      -n "$NAMESPACE"
+                      -n "$NAMESPACE" \
+                      --create-namespace
   fi
 
-  echo "Manager is now ready!"
+  echo "Slice operator is now ready!"
 }
 
 # Main function.
 function main() {
   checkDependencies
-  applyManager
+  applySliceOperator
 }
 
 main

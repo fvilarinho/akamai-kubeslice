@@ -6,7 +6,7 @@ resource "null_resource" "applyPrometheus" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   triggers = {
-    when = filemd5(local.applyWorkerClustersScriptFilename)
+    when = filemd5(local.applyPrometheusScriptFilename)
   }
 
   provisioner "local-exec" {
@@ -19,9 +19,7 @@ resource "null_resource" "applyPrometheus" {
   }
 
   depends_on = [
-    linode_lke_cluster.controller,
     linode_lke_cluster.workers,
-    local_sensitive_file.controllerKubeconfig,
     local_sensitive_file.workersKubeconfig
   ]
 }

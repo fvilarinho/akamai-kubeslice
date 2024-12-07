@@ -13,13 +13,6 @@ variable "settings" {
       password = "<password>"
     }
 
-    network = {
-      allowedIps = {
-        ipv4 = [ "0.0.0.0/0" ]
-        ipv6 = []
-      }
-    }
-
     controller = {
       identifier = "controller"
       nodes      = {
@@ -40,5 +33,11 @@ variable "settings" {
         }
       }
     ]
+
+    slice = {
+      identifier  = "demo"
+      networkMask = "10.10.0.0/16"
+      namespaces  = [ "frontend", "backend", "database" ]
+    }
   }
 }

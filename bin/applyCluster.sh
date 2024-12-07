@@ -13,26 +13,26 @@ function checkDependencies() {
 
     exit 1
   fi
+
+  if [ -z "$PROJECT_NAME" ]; then
+    echo "The project name is not defined! Please define it first to continue!"
+
+    exit 1
+  fi
 }
 
-function applyWorkerOperator() {
-  NAMESPACE=kubeslice-system
+# Applies the project manifest replacing the placeholders with the correspondent environment variable value.
+function applyProject() {
+  NAMESPACE="kubeslice-$PROJECT_NAME"
 
-  NAMESPACE_EXISTS=$($KUBECTL_CMD get ns | grep "$NAMESPACE")
-
-  if [ -z "$NAMESPACE_EXISTS" ]; then
-    $HELM_CMD install kubeslice-worker \
-                      kubeslice/kubeslice-worker \
-                      -f "$MANIFEST_FILENAME" \
-                      -n "$NAMESPACE" \
-                       --create-namespace
-  fi
+  $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
+                     -n "$NAMESPACE"
 }
 
 # Main function.
 function main() {
   checkDependencies
-  applyWorkerOperator
+  applyProject
 }
 
 main

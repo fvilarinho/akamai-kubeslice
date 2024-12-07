@@ -32,6 +32,8 @@ resource "linode_lke_cluster" "workers" {
     type  = each.value.nodes.type
     count = each.value.nodes.count
   }
+
+  depends_on = [ null_resource.applyProject ]
 }
 
 resource "local_sensitive_file" "workersKubeconfig" {

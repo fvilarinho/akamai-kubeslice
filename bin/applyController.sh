@@ -13,15 +13,37 @@ function checkDependencies() {
 
     exit 1
   fi
+
+  if [ -z "$NODES_COUNT" ]; then
+    echo "The nodes count is not defined! Please define it first to continue!"
+
+    exit 1
+  fi
 }
 
 # Applies the controller manifest replacing the placeholders with the correspondent environment variable value.
 function applyController() {
+  while true; do
+    READY_NODES=$($KUBECTL_CMD describe nodes | grep KubeletReady | wc -l | xargs)
+
+    if [ "$READY_NODES" -eq "$NODES_COUNT" ]; then
+      break
+    fi
+
+    echo "Waiting until the controller's cluster gets ready..."
+
+    sleep 1
+  done
+
+  echo "Controller's cluster is now ready!"
+
   NAMESPACE=kubeslice-controller
 
-  NAMESPACE_EXISTS=$($KUBECTL_CMD get ns | grep "$NAMESPACE")
+  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep deployed)
 
-  if [ -z "$NAMESPACE_EXISTS" ]; then
+  if [ -z "$ALREADY_INSTALLED" ]; then
+    echo "Applying controller..."
+
     $HELM_CMD install kubeslice-controller \
                       kubeslice/kubeslice-controller \
                       -f "$MANIFEST_FILENAME" \
@@ -30,38 +52,30 @@ function applyController() {
   fi
 
   while true; do
-    echo "Waiting for controller gets ready..."
+    CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "projects.controller.kubeslice.io")
 
-    PODS_RUNNING=$($KUBECTL_CMD get pods -n "$NAMESPACE" | grep kubeslice-controller-manager | grep Running)
+    if [ -n "$CRDS_EXISTS" ]; then
+      CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "clusters.controller.kubeslice.io")
 
-    if [ -n "$PODS_RUNNING" ]; then
-      sleep 5
+      if [ -n "$CRDS_EXISTS" ]; then
+        PODS_RUNNING=$($KUBECTL_CMD get pods -n "$NAMESPACE" | grep kubeslice-controller-manager | grep Running)
 
-      SVC_RUNNING=$($KUBECTL_CMD get svc -n "$NAMESPACE" | grep kubeslice-controller-webhook-service)
+        if [ -n "$PODS_RUNNING" ]; then
+          SVC_RUNNING=$($KUBECTL_CMD get svc -n "$NAMESPACE" | grep kubeslice-controller-webhook-service)
 
-      if [ -n "$SVC_RUNNING" ]; then
-        sleep 5
-
-        CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "projects.controller.kubeslice.io")
-
-        if [ -n "$CRDS_EXISTS" ]; then
-          sleep 5
-
-          CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "clusters.controller.kubeslice.io")
-
-          if [ -n "$CRDS_EXISTS" ]; then
-            sleep 5
-
+          if [ -n "$SVC_RUNNING" ]; then
             break
           fi
         fi
       fi
     fi
 
-    sleep 5
+    echo "Waiting until the controller gets ready..."
+
+    sleep 1
   done
 
-  echo "Controller is running!"
+  echo "Controller is now ready!"
 }
 
 # Main function.
