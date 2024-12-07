@@ -39,5 +39,12 @@ variable "settings" {
       networkMask = "10.10.0.0/16"
       namespaces  = [ "frontend", "backend", "database" ]
     }
+
+    firewall = {
+      allowedIps = {
+        ipv4 = ["0.0.0.0/0 "]
+        ipv6 = []
+      }
+    }
   }
 }
