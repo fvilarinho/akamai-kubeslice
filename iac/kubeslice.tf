@@ -242,6 +242,7 @@ kind: SliceConfig
 metadata:
   name: ${var.settings.slice.identifier}
   namespace: kubeslice-${var.settings.general.namespace}
+
 spec:
   sliceSubnet: ${var.settings.slice.networkMask}
   sliceType: Application
@@ -249,8 +250,10 @@ spec:
     sliceGatewayType: OpenVPN
     sliceCaType: Local
   sliceIpamType: Local
+
   clusters:
 ${trim(join("", local.sliceClusters), "\n")}
+
   qosProfileDetails:
     queueType: HTB
     priority: 0
@@ -258,6 +261,7 @@ ${trim(join("", local.sliceClusters), "\n")}
     bandwidthCeilingKbps: 10000000
     bandwidthGuaranteedKbps: 10000000
     dscpClass: AF11
+
   namespaceIsolationProfile:
     applicationNamespaces:
 ${trim(join("", local.sliceNamespaces), "\n")}

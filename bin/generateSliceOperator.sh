@@ -58,8 +58,7 @@ function generateSliceOperator() {
   CA_CRT=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.ca\.crt}')
   TOKEN=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.token}')
 
-  echo "
-controllerSecret:
+  echo "controllerSecret:
   namespace: $PROJECT_NAMESPACE
   endpoint: $CONTROLLER_ENDPOINT
   ca.crt: $CA_CRT
