@@ -32,8 +32,8 @@ function applyProject() {
 
   README_FILENAME=../README.txt
 
-  echo "Welcome to Avesha Kubeslice Enterprise" > $README_FILENAME
-  echo "======================================" >> $README_FILENAME
+  echo "Welcome to Akamai Kubeslice" > $README_FILENAME
+  echo "===========================" >> $README_FILENAME
   echo >> $README_FILENAME
   echo "Use the token below to authenticate in the https://$($KUBECTL_CMD get svc kubeslice-ui-proxy -n kubeslice-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):" >> $README_FILENAME
 
