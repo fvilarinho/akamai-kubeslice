@@ -23,7 +23,7 @@ data "linode_instances" "clustersNodes" {
 }
 
 resource "linode_firewall" "default" {
-  label           = "${var.settings.general.namespace}-firewall"
+  label           = "${var.settings.controller.namespace}-firewall"
   tags            = var.settings.general.tags
   inbound_policy  = "DROP"
   outbound_policy = "ACCEPT"

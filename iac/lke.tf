@@ -1,8 +1,8 @@
 resource "linode_lke_cluster" "controller" {
   k8s_version = "1.31"
   label       = var.settings.controller.identifier
-  tags        = concat(var.settings.general.tags, [ var.settings.general.namespace ])
-  region      = var.settings.controller.nodes.region
+  tags        = concat(var.settings.general.tags, [ var.settings.controller.namespace ])
+  region      = var.settings.controller.region
 
   pool {
     type  = var.settings.controller.nodes.type
@@ -21,8 +21,8 @@ resource "linode_lke_cluster" "workers" {
   for_each    = { for worker in var.settings.workers : worker.identifier => worker }
   k8s_version = "1.31"
   label       = each.key
-  tags        = concat(var.settings.general.tags, [ var.settings.general.namespace ])
-  region      = each.value.nodes.region
+  tags        = concat(var.settings.general.tags, [ var.settings.controller.namespace ])
+  region      = each.value.region
 
   pool {
     labels = {

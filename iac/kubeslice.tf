@@ -97,7 +97,7 @@ kind: Project
 
 metadata:
   namespace: kubeslice-controller
-  name: ${var.settings.general.namespace}
+  name: ${var.settings.controller.namespace}
 
 spec:
   serviceAccount:
@@ -117,7 +117,7 @@ resource "null_resource" "applyProject" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.project.filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.namespace
     }
 
     quiet   = true
@@ -137,14 +137,14 @@ kind: Cluster
 
 metadata:
   name: ${each.key}
-  namespace: kubeslice-${var.settings.general.namespace}
+  namespace: kubeslice-${var.settings.controller.namespace}
 
 spec:
   networkInterface: eth0
   clusterProperty:
     geoLocation:
       cloudProvider: ${each.value.cloud}
-      cloudRegion: ${each.value.nodes.region}
+      cloudRegion: ${each.value.region}
 EOT
 
   depends_on = [
@@ -164,7 +164,7 @@ resource "null_resource" "applyClusters" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.cluster[each.key].filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.namespace
     }
 
     quiet   = true
@@ -185,7 +185,7 @@ resource "null_resource" "generateSliceOperator" {
     environment = {
       KUBECONFIG                = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME         = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
-      PROJECT_NAME              = var.settings.general.namespace
+      PROJECT_NAME              = var.settings.controller.namespace
       WORKER_CLUSTER_IDENTIFIER = each.key
       WORKER_CLUSTER_ENDPOINT   = linode_lke_cluster.workers[each.key].api_endpoints[0]
       LICENSE_USERNAME          = var.settings.license.username
@@ -241,7 +241,7 @@ apiVersion: controller.kubeslice.io/v1alpha1
 kind: SliceConfig
 metadata:
   name: ${var.settings.slice.identifier}
-  namespace: kubeslice-${var.settings.general.namespace}
+  namespace: kubeslice-${var.settings.controller.namespace}
 
 spec:
   sliceSubnet: ${var.settings.slice.networkMask}
@@ -285,7 +285,7 @@ resource "null_resource" "applySlice" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.slice.filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.namespace
     }
 
     quiet   = true

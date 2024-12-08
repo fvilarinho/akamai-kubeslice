@@ -1,11 +1,10 @@
 variable "settings" {
   default = {
     general = {
-      domain     = "<your-domain>"
-      email      = "<your-email>"
-      token      = "<token>"
-      namespace  = "multicloud"
-      tags       = [ "demo", "kubeslice" ]
+      domain = "<your-domain>"
+      email  = "<your-email>"
+      token  = "<token>"
+      tags   = [ "demo", "kubeslice" ]
     }
 
     license = {
@@ -14,10 +13,11 @@ variable "settings" {
     }
 
     controller = {
+      namespace  = "multicloud"
       identifier = "controller"
+      region     = "<region>"
       nodes      = {
         type   = "g6-standard-4"
-        region = "<region>"
         count  = 2
       }
     }
@@ -26,18 +26,18 @@ variable "settings" {
       {
         identifier = "worker1"
         cloud      = "Akamai"
+        region     = "<region>"
         nodes      = {
           type   = "g6-standard-4"
-          region = "<region>"
           count  = 3
         }
       }
     ]
 
     slice = {
+      namespaces  = [ "frontend", "backend", "database" ]
       identifier  = "demo"
       networkMask = "10.10.0.0/16"
-      namespaces  = [ "frontend", "backend", "database" ]
     }
 
     firewall = {
