@@ -7,8 +7,6 @@ function showLabel() {
   elif [[ "$0" == *"deploy.sh"* ]]; then
     echo "** Deploy **"
   fi
-
-  echo
 }
 
 # Prepares the environment to execute this script.
