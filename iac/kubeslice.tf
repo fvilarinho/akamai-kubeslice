@@ -14,13 +14,17 @@ resource "local_file" "controller" {
 global:
   imageRegistry: docker.io/aveshasystems
   kubeTally:
-    enabled: false
+    enabled: true
+    postgresAddr:
+    postgresPort:
     postgresUser:
     postgresPassword:
     postgresDB:
-    postgresAddr:
+    postgresSslmode: require
 
 kubeslice:
+  prometheus:
+    enabled: true
   controller:
     endpoint: ${linode_lke_cluster.controller.api_endpoints[0]}
 
@@ -35,7 +39,7 @@ EOT
 
 resource "null_resource" "applyController" {
   triggers = {
-    when = filemd5(local.applyControllerScriptFilename)
+    when = "${filemd5(local.applyControllerScriptFilename)}|${md5(local_file.controller.content)}"
   }
 
   provisioner "local-exec" {
@@ -73,7 +77,7 @@ EOT
 
 resource "null_resource" "applyManager" {
   triggers = {
-    when = filemd5(local.applyManagerScriptFilename)
+    when = "${filemd5(local.applyManagerScriptFilename)}|${md5(local_file.manager.content)}"
   }
 
   provisioner "local-exec" {
@@ -110,7 +114,7 @@ EOT
 
 resource "null_resource" "applyProject" {
   triggers = {
-    when = filemd5(local.applyProjectScriptFilename)
+    when = "${filemd5(local.applyProjectScriptFilename)}|${md5(local_file.project.content)}"
   }
 
   provisioner "local-exec" {
@@ -157,7 +161,7 @@ resource "null_resource" "applyClusters" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   triggers = {
-    when = filemd5(local.applyClusterScriptFilename)
+    when = "${filemd5(local.applyClusterScriptFilename)}|${md5(local_file.cluster[each.key].content)}"
   }
 
   provisioner "local-exec" {
@@ -278,7 +282,7 @@ EOT
 
 resource "null_resource" "applySlice" {
   triggers = {
-    when = filemd5(local.applySliceScriptFilename)
+    when = "${filemd5(local.applySliceScriptFilename)}|${md5(local_file.slice.content)}"
   }
 
   provisioner "local-exec" {
@@ -292,5 +296,5 @@ resource "null_resource" "applySlice" {
     command = local.applySliceScriptFilename
   }
 
-  depends_on = [ null_resource.applySliceOperator ]
+  depends_on = [ local_file.slice ]
 }
