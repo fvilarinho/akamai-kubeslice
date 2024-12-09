@@ -1,7 +1,7 @@
 resource "linode_lke_cluster" "controller" {
   k8s_version = "1.31"
   label       = var.settings.controller.identifier
-  tags        = concat(var.settings.general.tags, [ var.settings.controller.namespace ])
+  tags        = var.settings.general.tags
   region      = var.settings.controller.region
 
   pool {
@@ -22,7 +22,7 @@ resource "linode_lke_cluster" "worker" {
 
   k8s_version = "1.31"
   label       = each.key
-  tags        = concat(var.settings.general.tags, [ var.settings.controller.namespace ])
+  tags        = var.settings.general.tags
   region      = each.value.region
 
   pool {
