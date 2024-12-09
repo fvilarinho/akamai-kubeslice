@@ -21,16 +21,31 @@ function applySliceOperator() {
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep deployed)
 
   if [ -z "$ALREADY_INSTALLED" ]; then
-    echo "Applying slice operator..."
+    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep failed)
+
+    if [ -n "$FAILED" ]; then
+      $HELM_CMD uninstall kubeslice-worker \
+                          -n "$NAMESPACE"
+    fi
+
+    echo "Installing the slice operator..."
 
     $HELM_CMD install kubeslice-worker \
                       kubeslice/kubeslice-worker \
                       -f "$MANIFEST_FILENAME" \
                       -n "$NAMESPACE" \
                       --create-namespace
-  fi
 
-  echo "Slice operator is now ready!"
+    if [ $? -eq 0 ]; then
+      echo "Slice operator was installed!"
+    else
+      echo "Slice operator wasn't installed!"
+
+      exit 1
+    fi
+  else
+    echo "Slice operator is already installed!"
+  fi
 }
 
 # Main function.

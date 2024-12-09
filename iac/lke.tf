@@ -17,8 +17,9 @@ resource "local_sensitive_file" "controllerKubeconfig" {
   depends_on      = [ linode_lke_cluster.controller ]
 }
 
-resource "linode_lke_cluster" "workers" {
-  for_each    = { for worker in var.settings.workers : worker.identifier => worker }
+resource "linode_lke_cluster" "worker" {
+  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+
   k8s_version = "1.31"
   label       = each.key
   tags        = concat(var.settings.general.tags, [ var.settings.controller.namespace ])
@@ -36,10 +37,11 @@ resource "linode_lke_cluster" "workers" {
   depends_on = [ null_resource.applyProject ]
 }
 
-resource "local_sensitive_file" "workersKubeconfig" {
-  for_each        = { for worker in var.settings.workers : worker.identifier => worker }
+resource "local_sensitive_file" "workerKubeconfig" {
+  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+
   filename        = abspath(pathexpand("../etc/${each.key}.kubeconfig"))
-  content_base64  = linode_lke_cluster.workers[each.key].kubeconfig
+  content_base64  = linode_lke_cluster.worker[each.key].kubeconfig
   file_permission = "600"
-  depends_on      = [ linode_lke_cluster.workers ]
+  depends_on      = [ linode_lke_cluster.worker ]
 }

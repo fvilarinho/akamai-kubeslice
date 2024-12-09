@@ -21,18 +21,28 @@ function checkDependencies() {
   fi
 }
 
-# Applies the project manifest replacing the placeholders with the correspondent environment variable value.
-function applyProject() {
+# Applies the worker manifest replacing the placeholders with the correspondent environment variable value.
+function applyWorker() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
+
+  echo "Applying worker..."
 
   $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
                      -n "$NAMESPACE"
+
+  if [ $? -eq 0 ]; then
+    echo "Worker was applied!"
+  else
+    echo "Worker wasn't applied!"
+
+    exit 1
+  fi
 }
 
 # Main function.
 function main() {
   checkDependencies
-  applyProject
+  applyWorker
 }
 
 main

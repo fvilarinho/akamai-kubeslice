@@ -13,18 +13,60 @@ function checkDependencies() {
 function applyIstio() {
   NAMESPACE=istio-system
 
-  NAMESPACE_EXISTS=$($KUBECTL_CMD get ns | grep "$NAMESPACE")
+  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep deployed)
 
-  if [ -z "$NAMESPACE_EXISTS" ]; then
+  if [ -z "$ALREADY_INSTALLED" ]; then
+    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep failed)
+
+    if [ -n "$FAILED" ]; then
+      $HELM_CMD uninstall istio-base \
+                          -n "$NAMESPACE"
+    fi
+
+    echo "Installing istio base..."
+
     $HELM_CMD install istio-base \
                       kubeslice/istio-base \
                       -n "$NAMESPACE" \
                       --create-namespace
 
+    if [ $? -eq 0 ]; then
+      echo "Istio base was installed!"
+    else
+      echo "Istio base wasn't installed!"
+
+      exit 1
+    fi
+  else
+    echo "Istio base is already installed!"
+  fi
+
+  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep deployed)
+
+  if [ -z "$ALREADY_INSTALLED" ]; then
+    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep failed)
+
+    if [ -n "$FAILED" ]; then
+      $HELM_CMD uninstall istiod \
+                          -n "$NAMESPACE"
+    fi
+
+    echo "Installing istio discovery..."
+
     $HELM_CMD install istiod \
                       kubeslice/istio-discovery \
                       -n "$NAMESPACE" \
                       --create-namespace
+
+    if [ $? -eq 0 ]; then
+      echo "Istio discovery was installed!"
+    else
+      echo "Istio discovery wasn't installed!"
+
+      exit 1
+    fi
+  else
+    echo "Istio discovery is already installed!"
   fi
 }
 

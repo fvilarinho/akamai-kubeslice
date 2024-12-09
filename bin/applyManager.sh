@@ -22,15 +22,30 @@ function applyManager() {
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep deployed)
 
   if [ -z "$ALREADY_INSTALLED" ]; then
-    echo "Applying manager..."
+    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep failed)
+
+    if [ -n "$FAILED" ]; then
+      $HELM_CMD uninstall kubeslice-ui \
+                          -n "$NAMESPACE"
+    fi
+
+    echo "Installing manager..."
 
     $HELM_CMD install kubeslice-ui \
                       kubeslice/kubeslice-ui \
                       -f "$MANIFEST_FILENAME" \
                       -n "$NAMESPACE"
-  fi
 
-  echo "Manager is now ready!"
+    if [ $? -eq 0 ]; then
+      echo "Manager was installed!"
+    else
+      echo "Manager wasn't installed!"
+
+      exit 1
+    fi
+  else
+    echo "Manager is already installed!"
+  fi
 }
 
 # Main function.

@@ -1,9 +1,11 @@
 locals {
   nodesToBeProtected = concat([ for node in linode_lke_cluster.controller.pool[0].nodes : node.instance_id ],
-                              flatten([ for worker in linode_lke_cluster.workers : [ for node in worker.pool[0].nodes : node.instance_id ]]))
-  allowedIps         = concat(flatten([ for node in data.linode_instances.clustersNodes.instances : [ "${node.ip_address}/32", "${node.private_ip_address}/32" ]]),
+                              flatten([ for worker in var.settings.workers : [ for node in linode_lke_cluster.worker[worker.identifier].pool[0].nodes : node.instance_id ]]))
+
+  allowedIps = concat(flatten([ for node in data.linode_instances.clustersNodes.instances : [ "${node.ip_address}/32", "${node.private_ip_address}/32" ]]),
                               [ "${jsondecode(data.http.myIp.response_body).ip}/32" ])
-  allowedIpv4        = concat(var.settings.firewall.allowedIps.ipv4, local.allowedIps)
+
+  allowedIpv4 = concat(var.settings.firewall.allowedIps.ipv4, local.allowedIps)
 }
 
 data "http" "myIp" {
@@ -18,7 +20,7 @@ data "linode_instances" "clustersNodes" {
 
   depends_on = [
     linode_lke_cluster.controller,
-    linode_lke_cluster.workers
+    linode_lke_cluster.worker
   ]
 }
 

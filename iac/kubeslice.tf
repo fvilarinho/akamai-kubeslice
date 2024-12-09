@@ -2,7 +2,7 @@ locals {
   applyControllerScriptFilename       = abspath(pathexpand("../bin/applyController.sh"))
   applyManagerScriptFilename          = abspath(pathexpand("../bin/applyManager.sh"))
   applyProjectScriptFilename          = abspath(pathexpand("../bin/applyProject.sh"))
-  applyClusterScriptFilename          = abspath(pathexpand("../bin/applyCluster.sh"))
+  applyWorkerScriptFilename           = abspath(pathexpand("../bin/applyWorker.sh"))
   generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
   applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
   applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
@@ -14,7 +14,7 @@ resource "local_file" "controller" {
 global:
   imageRegistry: docker.io/aveshasystems
   kubeTally:
-    enabled: true
+    enabled: false
     postgresAddr:
     postgresPort:
     postgresUser:
@@ -131,10 +131,10 @@ resource "null_resource" "applyProject" {
   depends_on = [ local_file.project ]
 }
 
-resource "local_file" "cluster" {
+resource "local_file" "worker" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
-  filename = abspath(pathexpand("../etc/${each.key}-cluster.yaml"))
+  filename = abspath(pathexpand("../etc/${each.key}-worker.yaml"))
   content  = <<EOT
 apiVersion: controller.kubeslice.io/v1alpha1
 kind: Cluster
@@ -152,30 +152,31 @@ spec:
 EOT
 
   depends_on = [
-    linode_lke_cluster.workers,
-    local_sensitive_file.workersKubeconfig
+    null_resource.applyProject,
+    linode_lke_cluster.worker,
+    local_sensitive_file.workerKubeconfig
   ]
 }
 
-resource "null_resource" "applyClusters" {
+resource "null_resource" "applyWorker" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   triggers = {
-    when = "${filemd5(local.applyClusterScriptFilename)}|${md5(local_file.cluster[each.key].content)}"
+    when = "${filemd5(local.applyWorkerScriptFilename)}|${md5(local_file.worker[each.key].content)}"
   }
 
   provisioner "local-exec" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
-      MANIFEST_FILENAME = local_file.cluster[each.key].filename
+      MANIFEST_FILENAME = local_file.worker[each.key].filename
       PROJECT_NAME      = var.settings.controller.namespace
     }
 
     quiet   = true
-    command = local.applyClusterScriptFilename
+    command = local.applyWorkerScriptFilename
   }
 
-  depends_on = [ local_file.cluster ]
+  depends_on = [ local_file.worker ]
 }
 
 resource "null_resource" "generateSliceOperator" {
@@ -191,7 +192,7 @@ resource "null_resource" "generateSliceOperator" {
       MANIFEST_FILENAME         = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
       PROJECT_NAME              = var.settings.controller.namespace
       WORKER_CLUSTER_IDENTIFIER = each.key
-      WORKER_CLUSTER_ENDPOINT   = linode_lke_cluster.workers[each.key].api_endpoints[0]
+      WORKER_CLUSTER_ENDPOINT   = linode_lke_cluster.worker[each.key].api_endpoints[0]
       LICENSE_USERNAME          = var.settings.license.username
       LICENSE_PASSWORD          = var.settings.license.password
       LICENSE_EMAIL             = var.settings.general.email
@@ -201,7 +202,7 @@ resource "null_resource" "generateSliceOperator" {
     command = local.generateSliceOperatorScriptFilename
   }
 
-  depends_on = [ null_resource.applyClusters ]
+  depends_on = [ null_resource.applyWorker ]
 }
 
 resource "null_resource" "applySliceOperator" {
@@ -213,7 +214,7 @@ resource "null_resource" "applySliceOperator" {
 
   provisioner "local-exec" {
     environment = {
-      KUBECONFIG        = local_sensitive_file.workersKubeconfig[each.key].filename
+      KUBECONFIG        = local_sensitive_file.workerKubeconfig[each.key].filename
       MANIFEST_FILENAME = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
     }
 
@@ -221,7 +222,11 @@ resource "null_resource" "applySliceOperator" {
     command = local.applySliceOperatorScriptFilename
   }
 
-  depends_on = [ null_resource.generateSliceOperator ]
+  depends_on = [
+    null_resource.applyIstio,
+    null_resource.applyPrometheus,
+    null_resource.generateSliceOperator
+  ]
 }
 
 locals {

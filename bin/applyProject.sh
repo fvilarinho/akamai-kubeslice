@@ -30,16 +30,13 @@ function applyProject() {
   $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
                      -n "$NAMESPACE"
 
-  README_FILENAME=../README.txt
+  if [ $? -eq 0 ]; then
+    echo "Project was applied!"
+  else
+    echo "Project wasn't applied!"
 
-  echo "Welcome to Akamai Kubeslice" > $README_FILENAME
-  echo "===========================" >> $README_FILENAME
-  echo >> $README_FILENAME
-  echo "Use the token below to authenticate in the https://$($KUBECTL_CMD get svc kubeslice-ui-proxy -n kubeslice-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):" >> $README_FILENAME
-
-  $KUBECTL_CMD get secret kubeslice-rbac-rw-admin -n kubeslice-$PROJECT_NAME -o jsonpath='{.data.token}' | base64 --decode >> $README_FILENAME
-
-  cat $README_FILENAME
+    exit 1
+  fi
 }
 
 # Main function.

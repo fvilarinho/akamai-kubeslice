@@ -24,12 +24,18 @@ function checkDependencies() {
 function applySlice() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
 
-  echo "Applying slice..."
+  echo "Applying the slice..."
 
   $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
                      -n "$NAMESPACE"
 
-  echo "Slice was applied!"
+  if [ $? -eq 0 ]; then
+    echo "Slice was applied!"
+  else
+    echo "Slice wasn't applied!"
+
+    exit 1
+  fi
 }
 
 # Main function.

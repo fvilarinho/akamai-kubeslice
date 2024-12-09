@@ -11,7 +11,7 @@ resource "null_resource" "applyPrometheus" {
 
   provisioner "local-exec" {
     environment = {
-      KUBECONFIG = local_sensitive_file.workersKubeconfig[each.key].filename
+      KUBECONFIG = local_sensitive_file.workerKubeconfig[each.key].filename
     }
 
     quiet   = true
@@ -19,7 +19,7 @@ resource "null_resource" "applyPrometheus" {
   }
 
   depends_on = [
-    linode_lke_cluster.workers,
-    local_sensitive_file.workersKubeconfig
+    linode_lke_cluster.worker,
+    local_sensitive_file.workerKubeconfig
   ]
 }
