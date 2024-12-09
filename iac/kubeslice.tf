@@ -7,6 +7,7 @@ locals {
   generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
   applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
   applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
+  generateReadmeScriptFilename        = abspath(pathexpand("../bin/generateReadme.sh"))
 
   sliceWorkers = [ for worker in var.settings.workers : <<EOT
     - ${worker.identifier}
@@ -319,4 +320,27 @@ resource "null_resource" "applySlice" {
   }
 
   depends_on = [ local_file.slice ]
+}
+
+# Generate a readme file.
+resource "null_resource" "generateReadme" {
+  # Triggers only when it changed.
+  triggers = {
+    when = filemd5(local.generateReadmeScriptFilename)
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG   = local_sensitive_file.controllerKubeconfig.filename
+      PROJECT_NAME = var.settings.controller.namespace
+    }
+
+    quiet   = true
+    command = local.generateReadmeScriptFilename
+  }
+
+  depends_on = [
+    null_resource.applyProject,
+    null_resource.applyManager
+  ]
 }

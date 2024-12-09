@@ -3,3 +3,4 @@
 /iac/terraform.tfvars
 /etc/*.kubeconfig
 /etc/*.yaml
+/README.txt
