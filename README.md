@@ -18,8 +18,8 @@ environment:
 - **LKE (Linode Kubernetes Engine)**: Please check the file `iac/lke.tf` for more details. 
 - **[Prometheus](https://prometheus.io/)**: Required for Kubeslice. Please check the file `iac/prometheus.tf` for more 
 details.
-- **[Istio](https://https://istio.io//)**: Required for Kubeslice. Please check the file `iac/istio.tf` for more
-  details.
+- **[Istio](https://https://istio.io//)**: Required for Kubeslice. Please check the file `iac/istio.tf` for more 
+details.
 - **[Kubeslice](https://avesha.io/products/avesha-enterprise-for-kubeslice)**: Please check the file `iac/kubeslice.tf` 
 for more details.
 
