@@ -21,7 +21,7 @@ function checkDependencies() {
   fi
 }
 
-# Applies the controller manifest replacing the placeholders with the correspondent environment variable value.
+# Applies the controller manifest. It waits until all nodes are ready.
 function applyController() {
   while true; do
     READY_NODES=$($KUBECTL_CMD describe nodes | grep KubeletReady | wc -l | xargs)
@@ -41,9 +41,11 @@ function applyController() {
 
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep deployed)
 
+  # Check if the controller is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep failed)
 
+    # Check if the installation was completed.
     if [ -n "$FAILED" ]; then
       $HELM_CMD uninstall kubeslice-controller \
                           -n "$NAMESPACE"
@@ -68,6 +70,7 @@ function applyController() {
     echo "Controller is already installed!"
   fi
 
+  # Waits until all the required resources are available.
   while true; do
     CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "projects.controller.kubeslice.io")
 

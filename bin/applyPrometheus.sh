@@ -9,15 +9,17 @@ function checkDependencies() {
   fi
 }
 
-# Applies prometheus stack replacing the placeholders with the environment variables values.
+# Applies prometheus stack required by slice operator.
 function applyPrometheus() {
   NAMESPACE=monitoring
 
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep prometheus- | grep deployed)
 
+  # Check if the prometheus is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep prometheus- | grep failed)
 
+    # Check if the installation was completed.
     if [ -n "$FAILED" ]; then
       $HELM_CMD uninstall prometheus \
                           -n "$NAMESPACE"

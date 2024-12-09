@@ -15,15 +15,17 @@ function checkDependencies() {
   fi
 }
 
-# Applies the manager manifest replacing the placeholders with the correspondent environment variable value.
+# Applies the manager (UI) manifest.
 function applyManager() {
   NAMESPACE=kubeslice-controller
 
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep deployed)
 
+  # Check if the manager (UI) is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep failed)
 
+    # Check if the installation was completed.
     if [ -n "$FAILED" ]; then
       $HELM_CMD uninstall kubeslice-ui \
                           -n "$NAMESPACE"

@@ -1,3 +1,4 @@
+# Required local variables.
 locals {
   applyControllerScriptFilename       = abspath(pathexpand("../bin/applyController.sh"))
   applyManagerScriptFilename          = abspath(pathexpand("../bin/applyManager.sh"))
@@ -6,8 +7,21 @@ locals {
   generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
   applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
   applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
+
+  sliceWorkers = [ for worker in var.settings.workers : <<EOT
+    - ${worker.identifier}
+EOT
+  ]
+
+  sliceNamespaces = [ for namespace in var.settings.slice.namespaces : <<EOT
+      - namespace: ${namespace}
+        clusters:
+          - "*"
+EOT
+  ]
 }
 
+# Controller installation manifest.
 resource "local_file" "controller" {
   filename = abspath(pathexpand("../etc/controller.yaml"))
   content = <<EOT
@@ -37,7 +51,9 @@ EOT
   depends_on = [ linode_lke_cluster.controller ]
 }
 
+# Applies the controller manifest.
 resource "null_resource" "applyController" {
+  # Triggers only when it changed.
   triggers = {
     when = "${filemd5(local.applyControllerScriptFilename)}|${md5(local_file.controller.content)}"
   }
@@ -59,6 +75,7 @@ resource "null_resource" "applyController" {
   ]
 }
 
+# Manager (UI) installation manifest.
 resource "local_file" "manager" {
   filename = abspath(pathexpand("../etc/manager.yaml"))
   content = <<EOT
@@ -75,7 +92,9 @@ EOT
   depends_on = [ null_resource.applyController ]
 }
 
+# Applies the manager (UI) manifest in the controller.
 resource "null_resource" "applyManager" {
+  # Triggers only when it changed.
   triggers = {
     when = "${filemd5(local.applyManagerScriptFilename)}|${md5(local_file.manager.content)}"
   }
@@ -93,6 +112,7 @@ resource "null_resource" "applyManager" {
   depends_on = [ local_file.manager ]
 }
 
+# Project manifest.
 resource "local_file" "project" {
   filename = abspath(pathexpand("../etc/project.yaml"))
   content = <<EOT
@@ -112,7 +132,9 @@ EOT
   depends_on = [ null_resource.applyManager ]
 }
 
+# Applies the project manifest in the controller.
 resource "null_resource" "applyProject" {
+  # Triggers only when it changed.
   triggers = {
     when = "${filemd5(local.applyProjectScriptFilename)}|${md5(local_file.project.content)}"
   }
@@ -131,6 +153,7 @@ resource "null_resource" "applyProject" {
   depends_on = [ local_file.project ]
 }
 
+# Worker manifest.
 resource "local_file" "worker" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
@@ -158,9 +181,11 @@ EOT
   ]
 }
 
+# Applies the worker manifest in the worker.
 resource "null_resource" "applyWorker" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
+  # Triggers only when it changed.
   triggers = {
     when = "${filemd5(local.applyWorkerScriptFilename)}|${md5(local_file.worker[each.key].content)}"
   }
@@ -179,6 +204,7 @@ resource "null_resource" "applyWorker" {
   depends_on = [ local_file.worker ]
 }
 
+# Creates the slice operator installation manifest.
 resource "null_resource" "generateSliceOperator" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
@@ -205,9 +231,11 @@ resource "null_resource" "generateSliceOperator" {
   depends_on = [ null_resource.applyWorker ]
 }
 
+# Applies the slice operator manifest in the worker.
 resource "null_resource" "applySliceOperator" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
+  # Triggers only when it changed.
   triggers = {
     when = filemd5(local.applySliceOperatorScriptFilename)
   }
@@ -229,20 +257,7 @@ resource "null_resource" "applySliceOperator" {
   ]
 }
 
-locals {
-  sliceClusters   = [ for worker in var.settings.workers : <<EOT
-    - ${worker.identifier}
-EOT
-  ]
-
-  sliceNamespaces = [ for namespace in var.settings.slice.namespaces : <<EOT
-      - namespace: ${namespace}
-        clusters:
-          - "*"
-EOT
-  ]
-}
-
+# Slice manifest.
 resource "local_file" "slice" {
   filename = abspath(pathexpand("../etc/slice.yaml"))
   content  = <<EOT
@@ -261,7 +276,7 @@ spec:
   sliceIpamType: Local
 
   clusters:
-${trim(join("", local.sliceClusters), "\n")}
+${trim(join("", local.sliceWorkers), "\n")}
 
   qosProfileDetails:
     queueType: HTB
@@ -285,7 +300,9 @@ EOT
   depends_on = [ null_resource.applySliceOperator ]
 }
 
+# Applies the slice manifest in the controller.
 resource "null_resource" "applySlice" {
+  # Triggers only when it changed.
   triggers = {
     when = "${filemd5(local.applySliceScriptFilename)}|${md5(local_file.slice.content)}"
   }

@@ -21,6 +21,7 @@ function checkDependencies() {
   fi
 }
 
+# Applies the slice. Slice is the group of workers.
 function applySlice() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
 

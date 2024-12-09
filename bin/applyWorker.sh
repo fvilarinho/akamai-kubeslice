@@ -21,7 +21,7 @@ function checkDependencies() {
   fi
 }
 
-# Applies the worker manifest replacing the placeholders with the correspondent environment variable value.
+# Applies the worker manifest. It defines a worker in the slice.
 function applyWorker() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
 

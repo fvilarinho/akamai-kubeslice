@@ -9,15 +9,17 @@ function checkDependencies() {
   fi
 }
 
-# Applies istio stack replacing the placeholders with the environment variables values.
+# Applies istio stack stack required by slice operator.
 function applyIstio() {
   NAMESPACE=istio-system
 
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep deployed)
 
+  # Check if the istio base is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep failed)
 
+    # Check if the installation was completed.
     if [ -n "$FAILED" ]; then
       $HELM_CMD uninstall istio-base \
                           -n "$NAMESPACE"
@@ -43,9 +45,11 @@ function applyIstio() {
 
   ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep deployed)
 
+  # Check if the istio discovery is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep failed)
 
+    # Check if the installation was completed.
     if [ -n "$FAILED" ]; then
       $HELM_CMD uninstall istiod \
                           -n "$NAMESPACE"

@@ -49,6 +49,7 @@ function checkDependencies() {
   fi
 }
 
+# Creates the slice operator installation manifest.
 function generateSliceOperator() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
   SECRET_NAME="kubeslice-rbac-worker-$WORKER_CLUSTER_IDENTIFIER"
@@ -78,6 +79,7 @@ imagePullSecrets:
   email: $LICENSE_EMAIL" > "$MANIFEST_FILENAME"
 }
 
+# Main function.
 function main() {
   checkDependencies
   generateSliceOperator

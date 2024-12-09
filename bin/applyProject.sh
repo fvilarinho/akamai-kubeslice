@@ -21,7 +21,7 @@ function checkDependencies() {
   fi
 }
 
-# Applies the project manifest replacing the placeholders with the correspondent environment variable value.
+# Applies the project manifest required by kubeslice.
 function applyProject() {
   NAMESPACE=kubeslice-controller
 

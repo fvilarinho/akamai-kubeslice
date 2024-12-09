@@ -1,3 +1,4 @@
+# Definition of the controller infrastructure.
 resource "linode_lke_cluster" "controller" {
   k8s_version = "1.31"
   label       = var.settings.controller.identifier
@@ -10,6 +11,7 @@ resource "linode_lke_cluster" "controller" {
   }
 }
 
+# Saves the controller kubeconfig locally.
 resource "local_sensitive_file" "controllerKubeconfig" {
   filename        = abspath(pathexpand("../etc/${var.settings.controller.identifier}.kubeconfig"))
   content_base64  = linode_lke_cluster.controller.kubeconfig
@@ -17,6 +19,7 @@ resource "local_sensitive_file" "controllerKubeconfig" {
   depends_on      = [ linode_lke_cluster.controller ]
 }
 
+# Definition of the worker infrastructure.
 resource "linode_lke_cluster" "worker" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
@@ -37,6 +40,7 @@ resource "linode_lke_cluster" "worker" {
   depends_on = [ null_resource.applyProject ]
 }
 
+# Saves the worker kubeconfig locally.
 resource "local_sensitive_file" "workerKubeconfig" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
