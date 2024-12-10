@@ -19,16 +19,25 @@ function checkDependencies() {
 function applySliceOperator() {
   NAMESPACE=kubeslice-system
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD status kubeslice-worker \
+                                       -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
   # Check if the slice operator is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
-    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep failed)
+    PENDING=$($HELM_CMD status kubeslice-worker \
+                               -n "$NAMESPACE" 2> /dev/null | grep pending)
 
     # Check if the installation was completed.
-    if [ -n "$FAILED" ]; then
+    if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-worker \
                           -n "$NAMESPACE"
+    else
+      FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-worker- | grep failed)
+
+      if [ -n "$FAILED" ]; then
+        $HELM_CMD uninstall kubeslice-worker \
+                            -n "$NAMESPACE"
+      fi
     fi
 
     echo "Installing the slice operator..."

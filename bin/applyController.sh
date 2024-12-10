@@ -39,16 +39,25 @@ function applyController() {
 
   NAMESPACE=kubeslice-controller
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD status kubeslice-controller \
+                                       -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
   # Check if the controller is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
-    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep failed)
+    PENDING=$($HELM_CMD status kubeslice-controller \
+                               -n "$NAMESPACE" 2> /dev/null | grep pending)
 
     # Check if the installation was completed.
-    if [ -n "$FAILED" ]; then
+    if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-controller \
                           -n "$NAMESPACE"
+    else
+      FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-controller- | grep failed)
+
+      if [ -n "$FAILED" ]; then
+        $HELM_CMD uninstall kubeslice-controller \
+                            -n "$NAMESPACE"
+      fi
     fi
 
     echo "Installing controller..."

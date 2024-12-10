@@ -19,16 +19,25 @@ function checkDependencies() {
 function applyManager() {
   NAMESPACE=kubeslice-controller
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD status kubeslice-ui \
+                                       -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
   # Check if the manager (UI) is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
-    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep failed)
+    PENDING=$($HELM_CMD status kubeslice-ui \
+                               -n "$NAMESPACE" 2> /dev/null | grep pending)
 
     # Check if the installation was completed.
-    if [ -n "$FAILED" ]; then
+    if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-ui \
                           -n "$NAMESPACE"
+    else
+      FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep kubeslice-ui- | grep failed)
+
+      if [ -n "$FAILED" ]; then
+        $HELM_CMD uninstall kubeslice-ui \
+                            -n "$NAMESPACE"
+      fi
     fi
 
     echo "Installing manager..."
@@ -40,6 +49,21 @@ function applyManager() {
 
     if [ $? -eq 0 ]; then
       echo "Manager was installed!"
+
+      while true; do
+        SERVICE=$($KUBECTL_CMD get svc \
+                                   -n "$NAMESPACE" | grep kubeslice-ui-proxy)
+
+        if [ -n "$SERVICE" ]; then
+          break
+        fi
+
+        echo "Waiting until manager gets ready..."
+
+        sleep 1
+      done
+
+      echo "Manager is now ready!"
     else
       echo "Manager wasn't installed!"
 

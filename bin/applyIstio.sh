@@ -13,16 +13,25 @@ function checkDependencies() {
 function applyIstio() {
   NAMESPACE=istio-system
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD status istio-base \
+                                       -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
   # Check if the istio base is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
-    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep failed)
+    PENDING=$($HELM_CMD status istio-base \
+                               -n "$NAMESPACE" 2> /dev/null | grep pending)
 
     # Check if the installation was completed.
-    if [ -n "$FAILED" ]; then
+    if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall istio-base \
                           -n "$NAMESPACE"
+    else
+      FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-base- | grep failed)
+
+      if [ -n "$FAILED" ]; then
+        $HELM_CMD uninstall istio-base \
+                            -n "$NAMESPACE"
+      fi
     fi
 
     echo "Installing istio base..."
@@ -43,24 +52,32 @@ function applyIstio() {
     echo "Istio base is already installed!"
   fi
 
-  ALREADY_INSTALLED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep deployed)
+  ALREADY_INSTALLED=$($HELM_CMD status istiod \
+                                       -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
   # Check if the istio discovery is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
-    FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery | grep failed)
+    PENDING=$($HELM_CMD status istiod \
+                               -n "$NAMESPACE" 2> /dev/null | grep pending)
 
     # Check if the installation was completed.
-    if [ -n "$FAILED" ]; then
+    if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall istiod \
                           -n "$NAMESPACE"
+    else
+      FAILED=$($HELM_CMD list -n "$NAMESPACE" | grep istio-discovery- | grep failed)
+
+      if [ -n "$FAILED" ]; then
+        $HELM_CMD uninstall istio-discovery \
+                            -n "$NAMESPACE"
+      fi
     fi
 
     echo "Installing istio discovery..."
 
     $HELM_CMD install istiod \
                       kubeslice/istio-discovery \
-                      -n "$NAMESPACE" \
-                      --create-namespace
+                      -n "$NAMESPACE"
 
     if [ $? -eq 0 ]; then
       echo "Istio discovery was installed!"

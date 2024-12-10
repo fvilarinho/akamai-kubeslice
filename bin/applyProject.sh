@@ -32,6 +32,24 @@ function applyProject() {
 
   if [ $? -eq 0 ]; then
     echo "Project was applied!"
+
+    NAMESPACE="kubeslice-$PROJECT_NAME"
+
+    # Check if the installation was completed.
+    while true; do
+      SECRET=$($KUBECTL_CMD get secret \
+                                -n "$NAMESPACE" | grep kubeslice-rbac-rw-admin)
+
+      if [ -n "$SECRET" ]; then
+        break
+      fi
+
+      echo "Waiting until project gets ready..."
+
+      sleep 1
+    done
+
+    echo "Project is ready now!"
   else
     echo "Project wasn't applied!"
 
