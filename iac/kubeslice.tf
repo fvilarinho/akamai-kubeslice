@@ -29,13 +29,12 @@ resource "local_file" "controller" {
 global:
   imageRegistry: docker.io/aveshasystems
   kubeTally:
-    enabled: false
-    postgresAddr:
-    postgresPort:
-    postgresUser:
-    postgresPassword:
-    postgresDB:
-    postgresSslmode: require
+    enabled: ${var.settings.costManagement.enabled}
+    postgresAddr: "${var.settings.costManagement.database.hostname}"
+    postgresPort: ${var.settings.costManagement.database.port}
+    postgresUser: "${var.settings.costManagement.database.username}"
+    postgresPassword: "${var.settings.costManagement.database.password}"
+    postgresDB: "${var.settings.costManagement.database.name}"
 
 kubeslice:
   prometheus:
@@ -339,8 +338,5 @@ resource "null_resource" "generateReadme" {
     command = local.generateReadmeScriptFilename
   }
 
-  depends_on = [
-    null_resource.applyProject,
-    null_resource.applyManager
-  ]
+  depends_on = [ null_resource.applySlice ]
 }

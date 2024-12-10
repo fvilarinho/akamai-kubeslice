@@ -40,6 +40,17 @@ variable "settings" {
       networkMask = "10.10.0.0/16"
     }
 
+    costManagement = {
+      enabled  = true
+      database = {
+        name     = "<name>"
+        hostname = "<hostname>"
+        port     = 5432
+        username = "<username>"
+        password = "<password>"
+      }
+    }
+
     firewall = {
       allowedIps = {
         ipv4 = ["0.0.0.0/0 "]
