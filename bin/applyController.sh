@@ -24,7 +24,7 @@ function checkDependencies() {
 # Applies the controller manifest. It waits until all nodes are ready.
 function applyController() {
   while true; do
-    READY_NODES=$($KUBECTL_CMD describe nodes | grep KubeletReady | wc -l | xargs)
+    READY_NODES=$($KUBECTL_CMD describe nodes 2> /dev/null | grep KubeletReady | wc -l | xargs)
 
     if [ "$READY_NODES" -eq "$NODES_COUNT" ]; then
       break
@@ -81,16 +81,16 @@ function applyController() {
 
   # Waits until all the required resources are available.
   while true; do
-    CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "projects.controller.kubeslice.io")
+    CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" 2> /dev/null | grep "projects.controller.kubeslice.io")
 
     if [ -n "$CRDS_EXISTS" ]; then
-      CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" | grep "clusters.controller.kubeslice.io")
+      CRDS_EXISTS=$($KUBECTL_CMD get crds -n "$NAMESPACE" 2> /dev/null | grep "clusters.controller.kubeslice.io")
 
       if [ -n "$CRDS_EXISTS" ]; then
-        PODS_RUNNING=$($KUBECTL_CMD get pods -n "$NAMESPACE" | grep kubeslice-controller-manager | grep Running)
+        PODS_RUNNING=$($KUBECTL_CMD get pods -n "$NAMESPACE" 2> /dev/null | grep kubeslice-controller-manager | grep Running)
 
         if [ -n "$PODS_RUNNING" ]; then
-          SVC_RUNNING=$($KUBECTL_CMD get svc -n "$NAMESPACE" | grep kubeslice-controller-webhook-service)
+          SVC_RUNNING=$($KUBECTL_CMD get svc -n "$NAMESPACE" 2> /dev/null | grep kubeslice-controller-webhook-service)
 
           if [ -n "$SVC_RUNNING" ]; then
             break

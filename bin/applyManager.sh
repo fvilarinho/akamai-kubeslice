@@ -52,7 +52,7 @@ function applyManager() {
 
       while true; do
         SERVICE=$($KUBECTL_CMD get svc \
-                                   -n "$NAMESPACE" | grep kubeslice-ui-proxy)
+                                   -n "$NAMESPACE" 2> /dev/null | grep kubeslice-ui-proxy)
 
         if [ -n "$SERVICE" ]; then
           break

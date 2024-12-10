@@ -38,7 +38,7 @@ function applyProject() {
     # Check if the installation was completed.
     while true; do
       SECRET=$($KUBECTL_CMD get secret \
-                                -n "$NAMESPACE" | grep kubeslice-rbac-rw-admin)
+                                -n "$NAMESPACE" 2> /dev/null | grep kubeslice-rbac-rw-admin)
 
       if [ -n "$SECRET" ]; then
         break
