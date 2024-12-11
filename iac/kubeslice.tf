@@ -121,7 +121,7 @@ kind: Project
 
 metadata:
   namespace: kubeslice-controller
-  name: ${var.settings.controller.namespace}
+  name: ${var.settings.general.namespace}
 
 spec:
   serviceAccount:
@@ -143,7 +143,7 @@ resource "null_resource" "applyProject" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.project.filename
-      PROJECT_NAME      = var.settings.controller.namespace
+      PROJECT_NAME      = var.settings.general.namespace
     }
 
     quiet   = true
@@ -164,10 +164,9 @@ kind: Cluster
 
 metadata:
   name: ${each.key}
-  namespace: kubeslice-${var.settings.controller.namespace}
+  namespace: kubeslice-${var.settings.general.namespace}
 
 spec:
-  networkInterface: eth0
   clusterProperty:
     geoLocation:
       cloudProvider: ${each.value.cloud}
@@ -176,14 +175,13 @@ EOT
 
   depends_on = [
     null_resource.applyProject,
-    linode_lke_cluster.worker,
     local_sensitive_file.workerKubeconfig
   ]
 }
 
 # Applies the worker manifest in the worker.
 resource "null_resource" "applyWorker" {
-  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+  for_each = { for worker in var.settings.workers: worker.identifier => worker }
 
   # Triggers only when it changed.
   triggers = {
@@ -194,7 +192,7 @@ resource "null_resource" "applyWorker" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.worker[each.key].filename
-      PROJECT_NAME      = var.settings.controller.namespace
+      PROJECT_NAME      = var.settings.general.namespace
     }
 
     quiet   = true
@@ -216,9 +214,9 @@ resource "null_resource" "generateSliceOperator" {
     environment = {
       KUBECONFIG                = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME         = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
-      PROJECT_NAME              = var.settings.controller.namespace
+      PROJECT_NAME              = var.settings.general.namespace
       WORKER_CLUSTER_IDENTIFIER = each.key
-      WORKER_CLUSTER_ENDPOINT   = linode_lke_cluster.worker[each.key].api_endpoints[0]
+      WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host)
       LICENSE_USERNAME          = var.settings.license.username
       LICENSE_PASSWORD          = var.settings.license.password
       LICENSE_EMAIL             = var.settings.general.email
@@ -265,7 +263,7 @@ apiVersion: controller.kubeslice.io/v1alpha1
 kind: SliceConfig
 metadata:
   name: ${var.settings.slice.identifier}
-  namespace: kubeslice-${var.settings.controller.namespace}
+  namespace: kubeslice-${var.settings.general.namespace}
 
 spec:
   sliceSubnet: ${var.settings.slice.networkMask}
@@ -311,14 +309,17 @@ resource "null_resource" "applySlice" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.slice.filename
-      PROJECT_NAME      = var.settings.controller.namespace
+      PROJECT_NAME      = var.settings.general.namespace
     }
 
     quiet   = true
     command = local.applySliceScriptFilename
   }
 
-  depends_on = [ local_file.slice ]
+  depends_on = [
+    local_sensitive_file.workerKubeconfig,
+    local_file.slice
+  ]
 }
 
 # Generate a readme file.
@@ -331,12 +332,12 @@ resource "null_resource" "generateReadme" {
   provisioner "local-exec" {
     environment = {
       KUBECONFIG   = local_sensitive_file.controllerKubeconfig.filename
-      PROJECT_NAME = var.settings.controller.namespace
+      PROJECT_NAME = var.settings.general.namespace
     }
 
     quiet   = true
     command = local.generateReadmeScriptFilename
   }
 
-  depends_on = [ null_resource.applySlice ]
+  depends_on = [ null_resource.applyProject ]
 }

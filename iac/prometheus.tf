@@ -22,7 +22,7 @@ resource "null_resource" "applyPrometheus" {
   }
 
   depends_on = [
-    linode_lke_cluster.worker,
+    null_resource.applyWorker,
     local_sensitive_file.workerKubeconfig
   ]
 }

@@ -1,10 +1,22 @@
 variable "settings" {
   default = {
     general = {
-      domain = "<your-domain>"
-      email  = "<your-email>"
-      token  = "<token>"
-      tags   = [ "demo", "kubeslice" ]
+      domain    = "<your-domain>"
+      email     = "<your-email>"
+      namespace = "multicloud"
+      tags      = [ "demo", "kubeslice" ]
+    }
+
+    providers = {
+      akamai = {
+        token = "<token>"
+      }
+      azure = {
+        subscriptionId = "<subscriptionId>"
+        tenantId       = "<tenantId>"
+        clientId       = "<clientId>"
+        clientSecret   = "<clientSecret>"
+      }
     }
 
     license = {
@@ -13,7 +25,6 @@ variable "settings" {
     }
 
     controller = {
-      namespace  = "multicloud"
       identifier = "controller"
       region     = "<region>"
       nodes      = {

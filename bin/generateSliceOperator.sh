@@ -54,6 +54,20 @@ function generateSliceOperator() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
   SECRET_NAME="kubeslice-rbac-worker-$WORKER_CLUSTER_IDENTIFIER"
 
+  while true; do
+    SECRET=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" 2> /dev/null)
+
+    if [ -n "$SECRET" ]; then
+      break
+    fi
+
+    echo "Waiting until the worker gets ready..."
+
+    sleep 1
+  done
+
+  echo "Worker is now ready!"
+
   PROJECT_NAMESPACE=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.namespace}')
   CONTROLLER_ENDPOINT=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.controllerEndpoint}')
   CA_CRT=$($KUBECTL_CMD get secrets "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.ca\.crt}')

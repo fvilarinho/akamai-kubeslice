@@ -1,3 +1,10 @@
+# Required local variables.
+locals {
+  lkeWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Akamai" }
+  lkeNodes   = concat([ for node in linode_lke_cluster.controller.pool[0].nodes : node.instance_id ],
+                      flatten([ for worker in local.lkeWorkers : [ for node in linode_lke_cluster.worker[worker.identifier].pool[0].nodes : node.instance_id ]]))
+}
+
 # Definition of the controller infrastructure.
 resource "linode_lke_cluster" "controller" {
   k8s_version = "1.31"
@@ -21,7 +28,7 @@ resource "local_sensitive_file" "controllerKubeconfig" {
 
 # Definition of the worker infrastructure.
 resource "linode_lke_cluster" "worker" {
-  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+  for_each = { for worker in local.lkeWorkers : worker.identifier => worker }
 
   k8s_version = "1.31"
   label       = each.key
@@ -29,6 +36,7 @@ resource "linode_lke_cluster" "worker" {
   region      = each.value.region
 
   pool {
+    # Required for kubeslice.
     labels = {
       "kubeslice.io/node-type" = "gateway"
     }
@@ -40,12 +48,15 @@ resource "linode_lke_cluster" "worker" {
   depends_on = [ null_resource.applyProject ]
 }
 
-# Saves the worker kubeconfig locally.
-resource "local_sensitive_file" "workerKubeconfig" {
-  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+# Fetches all IPs (private and public) of the clusters' nodes to be allowed in the firewall.
+data "linode_instances" "lkeNodes" {
+  filter {
+    name   = "id"
+    values = local.lkeNodes
+  }
 
-  filename        = abspath(pathexpand("../etc/${each.key}.kubeconfig"))
-  content_base64  = linode_lke_cluster.worker[each.key].kubeconfig
-  file_permission = "600"
-  depends_on      = [ linode_lke_cluster.worker ]
+  depends_on = [
+    linode_lke_cluster.controller,
+    linode_lke_cluster.worker
+  ]
 }
