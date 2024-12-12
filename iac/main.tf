@@ -16,10 +16,6 @@ terraform {
       source = "linode/linode"
     }
 
-    aws = {
-      source = "hashicorp/aws"
-    }
-
     null = {
       source = "hashicorp/null"
     }
@@ -27,6 +23,7 @@ terraform {
     random = {
       source = "hashicorp/random"
     }
+
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "3.108.0"
