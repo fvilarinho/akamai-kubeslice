@@ -1,7 +1,7 @@
 ## Akamai Kubeslice
 
 ### Introduction
-This project has the intention to demonstrate the how to deploy Kubeslice Enterprise in a multicloud environment.
+This project has the intention to demonstrate the how to deploy Kubeslice Enterprise in a multicloud environment (LKE, EKS & AKS).
 
 ### Requirements
 - [terraform 1.5.x](https://terraform.io)
