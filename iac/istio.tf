@@ -9,7 +9,7 @@ resource "null_resource" "applyIstio" {
 
   # Triggers only when it changed.
   triggers = {
-    when = filemd5(local.applyIstioScriptFilename)
+    when = "${filemd5(local.applyIstioScriptFilename)}|${each.value.region}"
   }
 
   provisioner "local-exec" {

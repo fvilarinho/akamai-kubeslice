@@ -17,6 +17,10 @@ variable "settings" {
         clientId       = "<clientId>"
         clientSecret   = "<clientSecret>"
       }
+      aws = {
+        accessKey = "<accessKey>"
+        secretKey = "<secretKey>"
+      }
     }
 
     license = {

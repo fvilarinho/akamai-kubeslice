@@ -55,7 +55,7 @@ EOT
 resource "null_resource" "applyController" {
   # Triggers only when it changed.
   triggers = {
-    when = "${filemd5(local.applyControllerScriptFilename)}|${md5(local_file.controller.content)}"
+    when = "${filemd5(local.applyControllerScriptFilename)}|${md5(local_file.controller.content)}}${var.settings.controller.region}"
   }
 
   provisioner "local-exec" {
@@ -207,7 +207,7 @@ resource "null_resource" "generateSliceOperator" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   triggers = {
-    when = filemd5(local.generateSliceOperatorScriptFilename)
+    when = "${filemd5(local.generateSliceOperatorScriptFilename)}|${md5(local_file.worker[each.key].content)}"
   }
 
   provisioner "local-exec" {
@@ -216,7 +216,7 @@ resource "null_resource" "generateSliceOperator" {
       MANIFEST_FILENAME         = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
       PROJECT_NAME              = var.settings.general.namespace
       WORKER_CLUSTER_IDENTIFIER = each.key
-      WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host)
+      WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : (each.value.cloud == "Azure" ? azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host : data.aws_eks_cluster.worker[each.key].endpoint))
       LICENSE_USERNAME          = var.settings.license.username
       LICENSE_PASSWORD          = var.settings.license.password
       LICENSE_EMAIL             = var.settings.general.email
@@ -235,7 +235,7 @@ resource "null_resource" "applySliceOperator" {
 
   # Triggers only when it changed.
   triggers = {
-    when = filemd5(local.applySliceOperatorScriptFilename)
+    when = "${filemd5(local.applySliceOperatorScriptFilename)}|${md5(local_file.worker[each.key].content)}"
   }
 
   provisioner "local-exec" {
@@ -318,7 +318,8 @@ resource "null_resource" "applySlice" {
 
   depends_on = [
     local_sensitive_file.workerKubeconfig,
-    local_file.slice
+    local_file.slice,
+    null_resource.applySliceOperator
   ]
 }
 
@@ -339,5 +340,5 @@ resource "null_resource" "generateReadme" {
     command = local.generateReadmeScriptFilename
   }
 
-  depends_on = [ null_resource.applyProject ]
+  depends_on = [ null_resource.applySlice ]
 }

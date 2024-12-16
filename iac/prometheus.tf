@@ -9,7 +9,7 @@ resource "null_resource" "applyPrometheus" {
 
   # Triggers only when it changed.
   triggers = {
-    when = filemd5(local.applyPrometheusScriptFilename)
+    when = "${filemd5(local.applyPrometheusScriptFilename)}|${each.value.region}"
   }
 
   provisioner "local-exec" {

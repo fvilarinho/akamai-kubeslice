@@ -44,8 +44,6 @@ resource "linode_lke_cluster" "worker" {
     type  = each.value.nodes.type
     count = each.value.nodes.count
   }
-
-  depends_on = [ null_resource.applyProject ]
 }
 
 # Fetches all IPs (private and public) of the clusters' nodes to be allowed in the firewall.

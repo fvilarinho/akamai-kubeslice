@@ -1,8 +1,8 @@
 # Required local variables.
 locals {
-  azureWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Azure" }
-  aksNodes     = flatten([
-    for worker in local.azureWorkers :
+  aksWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Azure" }
+  aksNodes   = flatten([
+    for worker in local.aksWorkers :
     [
       for resource in data.azurerm_resources.worker[worker.identifier].resources :
       {
@@ -17,20 +17,15 @@ locals {
 
 # Provisioning of the resource groups for worker.
 resource "azurerm_resource_group" "worker" {
-  for_each = { for worker in local.azureWorkers : worker.identifier => worker }
+  for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
   name     = each.key
   location = each.value.region
-
-  depends_on = [
-    linode_lke_cluster.worker,
-    null_resource.applyProject
-  ]
 }
 
 # Provisioning of the workers' clusters.
 resource "azurerm_kubernetes_cluster" "worker" {
-  for_each = { for worker in local.azureWorkers : worker.identifier => worker }
+  for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
   name                = each.key
   dns_prefix          = each.key
@@ -43,6 +38,7 @@ resource "azurerm_kubernetes_cluster" "worker" {
     node_count                  = each.value.nodes.count
     vm_size                     = each.value.nodes.type
     enable_node_public_ip       = true
+    enable_auto_scaling         = false
 
     # Required for kubeslice.
     node_labels = {
@@ -65,15 +61,12 @@ resource "azurerm_kubernetes_cluster" "worker" {
     network_plugin = "azure"
   }
 
-  depends_on = [
-    azurerm_resource_group.worker,
-    null_resource.applyProject
-  ]
+  depends_on = [ azurerm_resource_group.worker ]
 }
 
 # Fetches all resources provisioned for the workers' clusters.
 data "azurerm_resources" "worker" {
-  for_each = { for worker in local.azureWorkers : worker.identifier => worker }
+  for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
   resource_group_name = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
 
