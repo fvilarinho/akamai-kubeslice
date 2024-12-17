@@ -10,7 +10,7 @@ locals {
         resourceGroup = data.azurerm_resources.worker[worker.identifier].resource_group_name
       }
 
-      if resource.type == "Microsoft.Network/publicIPAddresses"
+      if resource.type == "Microsoft.Compute/virtualMachineScaleSets"
     ]
   ])
 }
@@ -31,14 +31,15 @@ resource "azurerm_kubernetes_cluster" "worker" {
   dns_prefix          = each.key
   resource_group_name = azurerm_resource_group.worker[each.key].name
   location            = azurerm_resource_group.worker[each.key].location
+  kubernetes_version  = "1.31.2"
 
   default_node_pool {
     name                        = "default"
     temporary_name_for_rotation = "defaulttmp"
     node_count                  = each.value.nodes.count
     vm_size                     = each.value.nodes.type
-    enable_node_public_ip       = true
-    enable_auto_scaling         = false
+    node_public_ip_enabled      = true
+    auto_scaling_enabled        = false
 
     # Required for kubeslice.
     node_labels = {
@@ -74,7 +75,7 @@ data "azurerm_resources" "worker" {
 }
 
 # Fetches all nodes of the workers' clusters.
-data "azurerm_public_ip" "aksNodes" {
+data "azurerm_virtual_machine_scale_set" "aksNodes" {
   for_each = { for node in local.aksNodes : node.identifier => node }
 
   name                = each.key

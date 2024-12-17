@@ -14,23 +14,22 @@ terraform {
   required_providers {
     linode = {
       source = "linode/linode"
-    }
-
-    null = {
-      source = "hashicorp/null"
-    }
-
-    random = {
-      source = "hashicorp/random"
+      version = "2.31.1"
     }
 
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.108.0"
+      version = "4.14.0"
     }
 
     aws = {
       source  = "hashicorp/aws"
+      version = "5.81.0"
+    }
+
+    null = {
+      source = "hashicorp/null"
+      version = "3.2.3"
     }
   }
 }
@@ -48,7 +47,6 @@ provider "azurerm" {
   tenant_id       = var.settings.providers.azure.tenantId
   client_id       = var.settings.providers.azure.clientId
   client_secret   = var.settings.providers.azure.clientSecret
-  skip_provider_registration = true
 }
 
 # Definition of AWS provider.

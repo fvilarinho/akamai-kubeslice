@@ -1,8 +1,8 @@
 # Required local variables.
 locals {
   allowedIps = concat(flatten([ for node in data.linode_instances.lkeNodes.instances : [ "${node.ip_address}/32", "${node.private_ip_address}/32" ]]),
-                              [ for node in data.azurerm_public_ip.aksNodes : "${node.ip_address}/32"],
-                              [ for node in data.aws_instances.eksNodes.public_ips : "${node}/32"],
+                      flatten([ for scaleSet in data.azurerm_virtual_machine_scale_set.aksNodes : [ for node in scaleSet.instances : "${node.public_ip_address}/32" ] ]),
+                      flatten([ for node in data.aws_instances.eksNodes : [ for publicIp in node.public_ips : "${publicIp}/32"] ]),
                               [ "${jsondecode(data.http.myIp.response_body).ip}/32" ])
 
   allowedIpv4 = concat(var.settings.firewall.allowedIps.ipv4, local.allowedIps)
@@ -113,7 +113,7 @@ resource "linode_firewall" "default" {
   depends_on = [
     data.http.myIp,
     data.linode_instances.lkeNodes,
-    data.azurerm_public_ip.aksNodes,
+    data.azurerm_virtual_machine_scale_set.aksNodes,
     data.aws_instances.eksNodes
   ]
 }
