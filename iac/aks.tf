@@ -1,18 +1,6 @@
 # Required local variables.
 locals {
   aksWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Azure" }
-  aksNodes   = flatten([
-    for worker in local.aksWorkers :
-    [
-      for resource in data.azurerm_resources.worker[worker.identifier].resources :
-      {
-        identifier    = resource.name,
-        resourceGroup = data.azurerm_resources.worker[worker.identifier].resource_group_name
-      }
-
-      if resource.type == "Microsoft.Compute/virtualMachineScaleSets"
-    ]
-  ])
 }
 
 # Provisioning of the resource groups for worker.
@@ -63,23 +51,4 @@ resource "azurerm_kubernetes_cluster" "worker" {
   }
 
   depends_on = [ azurerm_resource_group.worker ]
-}
-
-# Fetches all resources provisioned for the workers' clusters.
-data "azurerm_resources" "worker" {
-  for_each = { for worker in local.aksWorkers : worker.identifier => worker }
-
-  resource_group_name = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
-
-  depends_on = [ azurerm_kubernetes_cluster.worker ]
-}
-
-# Fetches all nodes of the workers' clusters.
-data "azurerm_virtual_machine_scale_set" "aksNodes" {
-  for_each = { for node in local.aksNodes : node.identifier => node }
-
-  name                = each.key
-  resource_group_name = each.value.resourceGroup
-
-  depends_on = [ data.azurerm_resources.worker ]
 }

@@ -27,16 +27,20 @@ function applySlice() {
 
   echo "Applying the slice..."
 
-  $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
-                     -n "$NAMESPACE"
+  while true; do
+    $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
+                       -n "$NAMESPACE" 2> /dev/null
 
-  if [ $? -eq 0 ]; then
-    echo "Slice was applied!"
-  else
-    echo "Slice wasn't applied!"
+    if [ $? -eq 0 ]; then
+      echo "Slice was applied!"
 
-    exit 1
-  fi
+      break
+    fi
+
+    echo "Waiting until slice gets ready..."
+
+    sleep 1
+  done
 }
 
 # Main function.

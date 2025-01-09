@@ -27,34 +27,36 @@ function applyProject() {
 
   echo "Applying project..."
 
-  $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
-                     -n "$NAMESPACE"
+  while true; do
+    $KUBECTL_CMD apply -f "$MANIFEST_FILENAME" \
+                       -n "$NAMESPACE" 2> /dev/null
 
-  if [ $? -eq 0 ]; then
-    echo "Project was applied!"
+    if [ $? -eq 0 ]; then
+      echo "Project was applied!"
 
-    NAMESPACE="kubeslice-$PROJECT_NAME"
+      NAMESPACE="kubeslice-$PROJECT_NAME"
 
-    # Check if the installation was completed.
-    while true; do
-      SECRET=$($KUBECTL_CMD get secret \
-                                -n "$NAMESPACE" 2> /dev/null | grep kubeslice-rbac-rw-admin)
+      # Check if the installation was completed.
+      while true; do
+        SECRET=$($KUBECTL_CMD get secret \
+                                  -n "$NAMESPACE" 2> /dev/null | grep kubeslice-rbac-rw-admin)
 
-      if [ -n "$SECRET" ]; then
-        break
-      fi
+        if [ -n "$SECRET" ]; then
+          break
+        fi
 
-      echo "Waiting until project gets ready..."
+        echo "Waiting until project gets ready..."
 
-      sleep 1
-    done
+        sleep 1
+      done
 
-    echo "Project is ready now!"
-  else
-    echo "Project wasn't applied!"
+      echo "Project is ready now!"
 
-    exit 1
-  fi
+      break
+    fi
+
+    sleep 1
+  done
 }
 
 # Main function.
