@@ -23,3 +23,18 @@ data "aws_eks_node_group" "worker" {
   cluster_name    = each.key
   node_group_name = "default"
 }
+
+# Fetches all nodes of the workers' clusters.
+data "aws_instances" "eksNodes" {
+  for_each = { for worker in local.eksWorkers : worker.identifier => worker }
+
+  filter {
+    name   = "tag:eks:nodegroup-name"
+    values = [ data.aws_eks_node_group.worker[each.key].node_group_name ]
+  }
+
+  filter {
+    name   = "instance-state-name"
+    values = [ "running" ]
+  }
+}
