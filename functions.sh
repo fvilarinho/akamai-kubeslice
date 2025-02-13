@@ -15,6 +15,8 @@ function prepareToExecute() {
   export TERRAFORM_CMD=$(which terraform)
   export HELM_CMD=$(which helm)
   export KUBECTL_CMD=$(which kubectl)
+  export LINODE_CLI_CMD=$(which linode-cli)
+  export JQ_CMD=$(which jq)
 }
 
 # Shows the banner.
