@@ -1,14 +1,14 @@
 # Required local variables.
 locals {
-  applyControllerScriptFilename         = abspath(pathexpand("../bin/applyController.sh"))
-  applyManagerScriptFilename            = abspath(pathexpand("../bin/applyManager.sh"))
-  applyProjectScriptFilename            = abspath(pathexpand("../bin/applyProject.sh"))
-  applyWorkerScriptFilename             = abspath(pathexpand("../bin/applyWorker.sh"))
-  fetchWorkerIpScriptFilename           = abspath(pathexpand("../bin/fetchWorkerIp.sh"))
-  generateSliceOperatorScriptFilename   = abspath(pathexpand("../bin/generateSliceOperator.sh"))
-  applySliceOperatorScriptFilename      = abspath(pathexpand("../bin/applySliceOperator.sh"))
-  applySliceScriptFilename              = abspath(pathexpand("../bin/applySlice.sh"))
-  generateReadmeScriptFilename          = abspath(pathexpand("../bin/generateReadme.sh"))
+  applyControllerScriptFilename       = abspath(pathexpand("../bin/applyController.sh"))
+  applyManagerScriptFilename          = abspath(pathexpand("../bin/applyManager.sh"))
+  applyProjectScriptFilename          = abspath(pathexpand("../bin/applyProject.sh"))
+  applyWorkerScriptFilename           = abspath(pathexpand("../bin/applyWorker.sh"))
+  fetchWorkerNodeIpScriptFilename     = abspath(pathexpand("../bin/fetchWorkerNodeIp.sh"))
+  generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
+  applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
+  applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
+  generateReadmeScriptFilename        = abspath(pathexpand("../bin/generateReadme.sh"))
 
   sliceWorkers = [ for worker in var.settings.workers : <<EOT
     - ${worker.identifier}
@@ -26,7 +26,7 @@ EOT
 # Controller installation manifest.
 resource "local_file" "controller" {
   filename = abspath(pathexpand("../etc/controller.yaml"))
-  content = <<EOT
+  content  = <<EOT
 global:
   imageRegistry: docker.io/aveshasystems
   kubeTally:
@@ -44,9 +44,9 @@ kubeslice:
     endpoint: ${linode_lke_cluster.controller.api_endpoints[0]}
 
 imagePullSecrets:
-  username: ${var.settings.license.username}
-  password: ${var.settings.license.password}
-  email: ${var.settings.license.email}
+  username: ${var.settings.controller.license.username}
+  password: ${var.settings.controller.license.password}
+  email: ${var.settings.controller.license.email}
 EOT
 
   depends_on = [ linode_lke_cluster.controller ]
@@ -85,9 +85,9 @@ kubeslice:
     enabled: true
 
 imagePullSecrets:
-  username: ${var.settings.license.username}
-  password: ${var.settings.license.password}
-  email: ${var.settings.license.email}
+  username: ${var.settings.controller.license.username}
+  password: ${var.settings.controller.license.password}
+  email: ${var.settings.controller.license.email}
 EOT
 
   depends_on = [ null_resource.applyController ]
@@ -116,7 +116,7 @@ resource "null_resource" "applyManager" {
 # Project manifest.
 resource "local_file" "project" {
   filename = abspath(pathexpand("../etc/project.yaml"))
-  content = <<EOT
+  content  = <<EOT
 apiVersion: controller.kubeslice.io/v1alpha1
 kind: Project
 
@@ -154,11 +154,11 @@ resource "null_resource" "applyProject" {
   depends_on = [ local_file.project ]
 }
 
-data "external" "fetchWorkerIp" {
+data "external" "fetchWorkerNodeIp" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   program = [
-    local.fetchWorkerIpScriptFilename,
+    local.fetchWorkerNodeIpScriptFilename,
     local_sensitive_file.workerKubeconfig[each.key].filename
   ]
 
@@ -186,13 +186,13 @@ spec:
     telemetry:
       enabled: true
       telemetryProvider: prometheus
-      endpoint: http://${data.external.fetchWorkerIp[each.key].result.ip}:32700
+      endpoint: http://${data.external.fetchWorkerNodeIp[each.key].result.ip}:32700
 EOT
 
   depends_on = [
     null_resource.applyProject,
     local_sensitive_file.workerKubeconfig,
-    data.external.fetchWorkerIp
+    data.external.fetchWorkerNodeIp
   ]
 }
 
@@ -234,9 +234,9 @@ resource "null_resource" "generateSliceOperator" {
       PROJECT_NAME              = var.settings.controller.project
       WORKER_CLUSTER_IDENTIFIER = each.key
       WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host)
-      LICENSE_USERNAME          = var.settings.license.username
-      LICENSE_PASSWORD          = var.settings.license.password
-      LICENSE_EMAIL             = var.settings.license.email
+      LICENSE_USERNAME          = var.settings.controller.license.username
+      LICENSE_PASSWORD          = var.settings.controller.license.password
+      LICENSE_EMAIL             = var.settings.controller.license.email
     }
 
     quiet   = true

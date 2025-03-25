@@ -1,5 +1,6 @@
 module "provisioning" {
   source = "./provisioning"
 
-  settings = var.settings
+  credentials = var.credentials
+  settings    = var.settings
 }

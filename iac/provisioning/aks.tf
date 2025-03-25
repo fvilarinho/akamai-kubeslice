@@ -65,11 +65,11 @@ resource "null_resource" "applyAksNetworkSecurityGroupRules" {
 
   provisioner "local-exec" {
     environment = {
-      RESOURCE_GROUP_NAME = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
+      RESOURCE_GROUP_NAME   = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
       CONTROLLER_IDENTIFIER = var.settings.controller.identifier
     }
 
-    quiet = true
+    quiet   = true
     command = local.applyAksNetworkSecurityGroupRulesScriptFilename
   }
 

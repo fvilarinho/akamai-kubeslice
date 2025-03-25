@@ -1,6 +1,11 @@
 terraform {
   # Definition of required providers.
   required_providers {
+    akamai = {
+      source  = "akamai/akamai"
+      version = "6.6.0"
+    }
+
     linode = {
       source = "linode/linode"
       version = "2.31.1"
@@ -15,32 +20,28 @@ terraform {
       source = "hashicorp/null"
       version = "3.2.3"
     }
+
+    local = {
+      source = "hashicorp/local"
+      version = "2.5.2"
+    }
+
+    external = {
+      source = "hashicorp/external"
+      version = "2.3.4"
+    }
   }
-}
-
-# Definition of Akamai Cloud Computing provider.
-provider "linode" {
-  token = var.settings.credentials.akamai.token
-}
-
-# Definition of Microsoft Azure provider.
-provider "azurerm" {
-  features {}
-
-  subscription_id = var.settings.credentials.azure.subscriptionId
-  tenant_id       = var.settings.credentials.azure.tenantId
-  client_id       = var.settings.credentials.azure.clientId
-  client_secret   = var.settings.credentials.azure.clientSecret
 }
 
 # Saves the worker kubeconfig locally.
 resource "local_sensitive_file" "workerKubeconfig" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker}
 
-  filename       = abspath(pathexpand("../etc/${each.key}.kubeconfig"))
-  content_base64 = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].kubeconfig : base64encode(azurerm_kubernetes_cluster.worker[each.key].kube_config_raw))
+  filename        = abspath(pathexpand("../etc/${each.key}.kubeconfig"))
+  content_base64  = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].kubeconfig : base64encode(azurerm_kubernetes_cluster.worker[each.key].kube_config_raw))
   file_permission = "600"
-  depends_on      = [
+
+  depends_on = [
     linode_lke_cluster.worker,
     azurerm_kubernetes_cluster.worker
   ]
