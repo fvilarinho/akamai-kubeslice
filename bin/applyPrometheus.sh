@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -10,18 +10,18 @@ function checkDependencies() {
 }
 
 # Applies prometheus stack required by slice operator.
-function applyPrometheus() {
+function apply() {
   NAMESPACE=monitoring
 
   ALREADY_INSTALLED=$($HELM_CMD status prometheus \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the prometheus is already installed.
+  # Checks if the prometheus is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status prometheus \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall prometheus \
                           -n "$NAMESPACE"
@@ -56,7 +56,7 @@ function applyPrometheus() {
 # Main function.
 function main() {
   checkDependencies
-  applyPrometheus
+  apply
 }
 
 main

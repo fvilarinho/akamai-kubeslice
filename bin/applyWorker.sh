@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -22,7 +22,7 @@ function checkDependencies() {
 }
 
 # Applies the worker manifest. It defines a worker in the slice.
-function applyWorker() {
+function apply() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
 
   echo "Applying worker..."
@@ -42,7 +42,7 @@ function applyWorker() {
 # Main function.
 function main() {
   checkDependencies
-  applyWorker
+  apply
 }
 
 main

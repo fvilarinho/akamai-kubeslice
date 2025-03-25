@@ -1,15 +1,13 @@
 # Required local variables.
 locals {
   lkeWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Akamai" }
-  lkeNodes   = concat([ for node in linode_lke_cluster.controller.pool[0].nodes : node.instance_id ],
-                      flatten([ for worker in local.lkeWorkers : [ for node in linode_lke_cluster.worker[worker.identifier].pool[0].nodes : node.instance_id ]]))
 }
 
 # Definition of the controller infrastructure.
 resource "linode_lke_cluster" "controller" {
   k8s_version = "1.31"
   label       = var.settings.controller.identifier
-  tags        = var.settings.general.tags
+  tags        = var.settings.controller.tags
   region      = var.settings.controller.region
 
   pool {
@@ -32,7 +30,7 @@ resource "linode_lke_cluster" "worker" {
 
   k8s_version = "1.31"
   label       = each.key
-  tags        = var.settings.general.tags
+  tags        = each.value.tags
   region      = each.value.region
 
   pool {
@@ -44,17 +42,4 @@ resource "linode_lke_cluster" "worker" {
     type  = each.value.nodes.type
     count = each.value.nodes.count
   }
-}
-
-# Fetches all IPs (private and public) of the clusters' nodes to be allowed in the firewall.
-data "linode_instances" "lkeNodes" {
-  filter {
-    name   = "id"
-    values = local.lkeNodes
-  }
-
-  depends_on = [
-    linode_lke_cluster.controller,
-    linode_lke_cluster.worker
-  ]
 }

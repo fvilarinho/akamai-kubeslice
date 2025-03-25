@@ -7,21 +7,13 @@ This project has the intention to demonstrate the how to deploy Kubeslice Enterp
 - [terraform 1.5.x](https://terraform.io)
 - [kubectl 1.31.x](https://kubernetes.io/docs/reference/kubectl/kubectl)
 - [helm 3.16.x](https://helm.sh/)
+- [jq 1.7.x](https://jqlang.org/)
+- [linode-cli 5.56.x](https://www.linode.com/products/cli/)
+- [azure-cli 2.70.x](https://learn.microsoft.com/pt-br/cli/azure/install-azure-cli)
 - [Akamai Cloud Computing account](https://cloud.linode.com) or any other Cloud Provider account
 - `Any Linux Distribution` or
 - `Windows 10 or later` or
 - `MacOS Catalina or later`
-
-It automates (using **Terraform**) the provisioning of the following resources in Akamai Cloud Computing (former Linode) 
-environment:
-- **Cloud Firewall**: Please check the file `iac/firewall.tf` for more details.
-- **LKE (Linode Kubernetes Engine)**: Please check the file `iac/lke.tf` for more details. 
-- **[Prometheus](https://prometheus.io/)**: Required for Kubeslice. Please check the file `iac/prometheus.tf` for more 
-details.
-- **[Istio](https://https://istio.io//)**: Required for Kubeslice. Please check the file `iac/istio.tf` for more 
-details.
-- **[Kubeslice](https://avesha.io/products/avesha-enterprise-for-kubeslice)**: Please check the file `iac/kubeslice.tf` 
-for more details.
 
 All Terraform files use `variables` that are stored in the `iac/variables.tf`.
 

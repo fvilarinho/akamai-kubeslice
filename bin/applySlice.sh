@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -22,7 +22,7 @@ function checkDependencies() {
 }
 
 # Applies the slice. Slice is the group of workers.
-function applySlice() {
+function apply() {
   NAMESPACE="kubeslice-$PROJECT_NAME"
 
   echo "Applying the slice..."
@@ -46,7 +46,7 @@ function applySlice() {
 # Main function.
 function main() {
   checkDependencies
-  applySlice
+  apply
 }
 
 main

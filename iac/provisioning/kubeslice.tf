@@ -1,13 +1,14 @@
 # Required local variables.
 locals {
-  applyControllerScriptFilename       = abspath(pathexpand("../bin/applyController.sh"))
-  applyManagerScriptFilename          = abspath(pathexpand("../bin/applyManager.sh"))
-  applyProjectScriptFilename          = abspath(pathexpand("../bin/applyProject.sh"))
-  applyWorkerScriptFilename           = abspath(pathexpand("../bin/applyWorker.sh"))
-  generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
-  applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
-  applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
-  generateReadmeScriptFilename        = abspath(pathexpand("../bin/generateReadme.sh"))
+  applyControllerScriptFilename         = abspath(pathexpand("../bin/applyController.sh"))
+  applyManagerScriptFilename            = abspath(pathexpand("../bin/applyManager.sh"))
+  applyProjectScriptFilename            = abspath(pathexpand("../bin/applyProject.sh"))
+  applyWorkerScriptFilename             = abspath(pathexpand("../bin/applyWorker.sh"))
+  fetchWorkerIpScriptFilename           = abspath(pathexpand("../bin/fetchWorkerIp.sh"))
+  generateSliceOperatorScriptFilename   = abspath(pathexpand("../bin/generateSliceOperator.sh"))
+  applySliceOperatorScriptFilename      = abspath(pathexpand("../bin/applySliceOperator.sh"))
+  applySliceScriptFilename              = abspath(pathexpand("../bin/applySlice.sh"))
+  generateReadmeScriptFilename          = abspath(pathexpand("../bin/generateReadme.sh"))
 
   sliceWorkers = [ for worker in var.settings.workers : <<EOT
     - ${worker.identifier}
@@ -45,7 +46,7 @@ kubeslice:
 imagePullSecrets:
   username: ${var.settings.license.username}
   password: ${var.settings.license.password}
-  email: ${var.settings.general.email}
+  email: ${var.settings.license.email}
 EOT
 
   depends_on = [ linode_lke_cluster.controller ]
@@ -86,7 +87,7 @@ kubeslice:
 imagePullSecrets:
   username: ${var.settings.license.username}
   password: ${var.settings.license.password}
-  email: ${var.settings.general.email}
+  email: ${var.settings.license.email}
 EOT
 
   depends_on = [ null_resource.applyController ]
@@ -121,7 +122,7 @@ kind: Project
 
 metadata:
   namespace: kubeslice-controller
-  name: ${var.settings.general.namespace}
+  name: ${var.settings.controller.project}
 
 spec:
   serviceAccount:
@@ -143,7 +144,7 @@ resource "null_resource" "applyProject" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.project.filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.project
     }
 
     quiet   = true
@@ -151,6 +152,17 @@ resource "null_resource" "applyProject" {
   }
 
   depends_on = [ local_file.project ]
+}
+
+data "external" "fetchWorkerIp" {
+  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+
+  program = [
+    local.fetchWorkerIpScriptFilename,
+    local_sensitive_file.workerKubeconfig[each.key].filename
+  ]
+
+  depends_on = [ local_sensitive_file.workerKubeconfig ]
 }
 
 # Worker manifest.
@@ -164,18 +176,23 @@ kind: Cluster
 
 metadata:
   name: ${each.key}
-  namespace: kubeslice-${var.settings.general.namespace}
+  namespace: kubeslice-${var.settings.controller.project}
 
 spec:
   clusterProperty:
     geoLocation:
       cloudProvider: ${each.value.cloud}
       cloudRegion: ${each.value.region}
+    telemetry:
+      enabled: true
+      telemetryProvider: prometheus
+      endpoint: http://${data.external.fetchWorkerIp[each.key].result.ip}:32700
 EOT
 
   depends_on = [
     null_resource.applyProject,
-    local_sensitive_file.workerKubeconfig
+    local_sensitive_file.workerKubeconfig,
+    data.external.fetchWorkerIp
   ]
 }
 
@@ -192,7 +209,7 @@ resource "null_resource" "applyWorker" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.worker[each.key].filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.project
     }
 
     quiet   = true
@@ -214,12 +231,12 @@ resource "null_resource" "generateSliceOperator" {
     environment = {
       KUBECONFIG                = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME         = abspath(pathexpand("../etc/${each.key}-sliceOperator.yaml"))
-      PROJECT_NAME              = var.settings.general.namespace
+      PROJECT_NAME              = var.settings.controller.project
       WORKER_CLUSTER_IDENTIFIER = each.key
-      WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : (each.value.cloud == "Azure" ? azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host : data.aws_eks_cluster.worker[each.key].endpoint))
+      WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host)
       LICENSE_USERNAME          = var.settings.license.username
       LICENSE_PASSWORD          = var.settings.license.password
-      LICENSE_EMAIL             = var.settings.general.email
+      LICENSE_EMAIL             = var.settings.license.email
     }
 
     quiet   = true
@@ -263,7 +280,7 @@ apiVersion: controller.kubeslice.io/v1alpha1
 kind: SliceConfig
 metadata:
   name: ${var.settings.slice.identifier}
-  namespace: kubeslice-${var.settings.general.namespace}
+  namespace: kubeslice-${var.settings.controller.project}
 
 spec:
   sliceSubnet: ${var.settings.slice.networkMask}
@@ -309,7 +326,7 @@ resource "null_resource" "applySlice" {
     environment = {
       KUBECONFIG        = local_sensitive_file.controllerKubeconfig.filename
       MANIFEST_FILENAME = local_file.slice.filename
-      PROJECT_NAME      = var.settings.general.namespace
+      PROJECT_NAME      = var.settings.controller.project
     }
 
     quiet   = true
@@ -333,7 +350,7 @@ resource "null_resource" "generateReadme" {
   provisioner "local-exec" {
     environment = {
       KUBECONFIG   = local_sensitive_file.controllerKubeconfig.filename
-      PROJECT_NAME = var.settings.general.namespace
+      PROJECT_NAME = var.settings.controller.project
     }
 
     quiet   = true

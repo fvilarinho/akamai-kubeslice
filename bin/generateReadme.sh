@@ -1,4 +1,4 @@
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -25,7 +25,7 @@ function generateReadme() {
 
   URL=$($KUBECTL_CMD get svc kubeslice-ui-proxy \
                              -n "$NAMESPACE" \
-                             -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+                             -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
   echo "To access the URL, please open the URL https://$URL in your preferred browser and use the token below to authenticate:" >> "$README_FILENAME"
 

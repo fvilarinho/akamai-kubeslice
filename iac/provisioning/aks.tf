@@ -1,21 +1,11 @@
 # Required local variables.
 locals {
   aksWorkers = { for worker in var.settings.workers : worker.identifier => worker if worker.cloud == "Azure" }
-  aksNodes   = flatten([
-    for worker in local.aksWorkers :
-    [
-      for resource in data.azurerm_resources.worker[worker.identifier].resources :
-      {
-        identifier    = resource.name,
-        resourceGroup = data.azurerm_resources.worker[worker.identifier].resource_group_name
-      }
 
-      if resource.type == "Microsoft.Compute/virtualMachineScaleSets"
-    ]
-  ])
+  applyAksNetworkSecurityGroupRulesScriptFilename = abspath(pathexpand("../bin/applyAksNetworkSecurityGroupRules.sh"))
 }
 
-# Provisioning of the resource groups for worker.
+# Provisioning of the resource group for workers clusters.
 resource "azurerm_resource_group" "worker" {
   for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
@@ -23,7 +13,7 @@ resource "azurerm_resource_group" "worker" {
   location = each.value.region
 }
 
-# Provisioning of the workers' clusters.
+# Provisioning of the workers clusters.
 resource "azurerm_kubernetes_cluster" "worker" {
   for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
@@ -65,21 +55,23 @@ resource "azurerm_kubernetes_cluster" "worker" {
   depends_on = [ azurerm_resource_group.worker ]
 }
 
-# Fetches all resources provisioned for the workers' clusters.
-data "azurerm_resources" "worker" {
+# Applies the required firewall rules for the workers clusters.
+resource "null_resource" "applyAksNetworkSecurityGroupRules" {
   for_each = { for worker in local.aksWorkers : worker.identifier => worker }
 
-  resource_group_name = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
+  triggers = {
+    hash = filemd5(local.applyAksNetworkSecurityGroupRulesScriptFilename)
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      RESOURCE_GROUP_NAME = azurerm_kubernetes_cluster.worker[each.key].node_resource_group
+      CONTROLLER_IDENTIFIER = var.settings.controller.identifier
+    }
+
+    quiet = true
+    command = local.applyAksNetworkSecurityGroupRulesScriptFilename
+  }
 
   depends_on = [ azurerm_kubernetes_cluster.worker ]
-}
-
-# Fetches all nodes of the workers' clusters.
-data "azurerm_virtual_machine_scale_set" "aksNodes" {
-  for_each = { for node in local.aksNodes : node.identifier => node }
-
-  name                = each.key
-  resource_group_name = each.value.resourceGroup
-
-  depends_on = [ data.azurerm_resources.worker ]
 }

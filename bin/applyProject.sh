@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -22,7 +22,7 @@ function checkDependencies() {
 }
 
 # Applies the project manifest required by kubeslice.
-function applyProject() {
+function apply() {
   NAMESPACE=kubeslice-controller
 
   echo "Applying project..."
@@ -36,7 +36,7 @@ function applyProject() {
 
       NAMESPACE="kubeslice-$PROJECT_NAME"
 
-      # Check if the installation was completed.
+      # Checks if the installation was completed.
       while true; do
         SECRET=$($KUBECTL_CMD get secret \
                                   -n "$NAMESPACE" 2> /dev/null | grep kubeslice-rbac-rw-admin)
@@ -62,7 +62,7 @@ function applyProject() {
 # Main function.
 function main() {
   checkDependencies
-  applyProject
+  apply
 }
 
 main

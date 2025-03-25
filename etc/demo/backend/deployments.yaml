@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: phonebook
+  namespace: backend
+spec:
+  selector:
+    matchLabels:
+      app: phonebook
+  template:
+    metadata:
+      labels:
+        app: phonebook
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: phonebook
+          image: ghcr.io/fvilarinho/phonebook:latest
+          imagePullPolicy: Always
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: phonebook
+                  key: DB_HOST
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: phonebook
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: phonebook
+                  key: DB_PASS
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: phonebook
+                  key: DB_NAME
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: phonebook-logging-settings
+              mountPath: /home/phonebook/etc/logback.xml
+              subPath: logback.xml
+      volumes:
+        - name: phonebook-logging-settings
+          configMap:
+            name: phonebook-logging-settings

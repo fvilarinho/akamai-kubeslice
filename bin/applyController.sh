@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -22,7 +22,7 @@ function checkDependencies() {
 }
 
 # Applies the controller manifest. It waits until all nodes are ready.
-function applyController() {
+function apply() {
   while true; do
     READY_NODES=$($KUBECTL_CMD describe nodes 2> /dev/null | grep KubeletReady | wc -l | xargs)
 
@@ -42,12 +42,12 @@ function applyController() {
   ALREADY_INSTALLED=$($HELM_CMD status kubeslice-controller \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the controller is already installed.
+  # Checks if the controller is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status kubeslice-controller \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-controller \
                           -n "$NAMESPACE"
@@ -110,7 +110,7 @@ function applyController() {
 # Main function.
 function main() {
   checkDependencies
-  applyController
+  apply
 }
 
 main

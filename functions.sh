@@ -11,12 +11,21 @@ function showLabel() {
 
 # Prepares the environment to execute this script.
 function prepareToExecute() {
+  ENV_FILENAME=../etc/demo/.env
+
+  if [ -e "$ENV_FILENAME" ]; then
+    source "$ENV_FILENAME"
+  fi
+
   # Required binaries
   export TERRAFORM_CMD=$(which terraform)
   export HELM_CMD=$(which helm)
   export KUBECTL_CMD=$(which kubectl)
   export LINODE_CLI_CMD=$(which linode-cli)
+  export AZ_CLI_CMD=$(which az)
   export JQ_CMD=$(which jq)
+  export CERTBOT_CMD=$(which certbot)
+  export HTPASSWD_CMD=$(which htpasswd)
 }
 
 # Shows the banner.

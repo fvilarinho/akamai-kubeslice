@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -10,18 +10,18 @@ function checkDependencies() {
 }
 
 # Applies istio stack stack required by slice operator.
-function applyIstio() {
+function apply() {
   NAMESPACE=istio-system
 
   ALREADY_INSTALLED=$($HELM_CMD status istio-base \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the istio base is already installed.
+  # Checks if the istio base is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status istio-base \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall istio-base \
                           -n "$NAMESPACE"
@@ -55,12 +55,12 @@ function applyIstio() {
   ALREADY_INSTALLED=$($HELM_CMD status istiod \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the istio discovery is already installed.
+  # Checks if the istio discovery is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status istiod \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall istiod \
                           -n "$NAMESPACE"
@@ -94,7 +94,7 @@ function applyIstio() {
 # Main function.
 function main() {
   checkDependencies
-  applyIstio
+  apply
 }
 
 main

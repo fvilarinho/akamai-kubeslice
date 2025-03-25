@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -16,18 +16,18 @@ function checkDependencies() {
 }
 
 # Applies the manager (UI) manifest.
-function applyManager() {
+function apply() {
   NAMESPACE=kubeslice-controller
 
   ALREADY_INSTALLED=$($HELM_CMD status kubeslice-ui \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the manager (UI) is already installed.
+  # Checks if the manager (UI) is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status kubeslice-ui \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-ui \
                           -n "$NAMESPACE"
@@ -77,7 +77,7 @@ function applyManager() {
 # Main function.
 function main() {
   checkDependencies
-  applyManager
+  apply
 }
 
 main

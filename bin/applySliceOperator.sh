@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the dependencies of this script.
+# Checks the dependencies of this script.
 function checkDependencies() {
   if [ -z "$KUBECONFIG" ]; then
     echo "The kubeconfig filename is not defined! Please define it first to continue!"
@@ -16,18 +16,18 @@ function checkDependencies() {
 }
 
 # Applies the slice operator required by establish the connections between workers.
-function applySliceOperator() {
+function apply() {
   NAMESPACE=kubeslice-system
 
   ALREADY_INSTALLED=$($HELM_CMD status kubeslice-worker \
                                        -n "$NAMESPACE" 2> /dev/null | grep deployed)
 
-  # Check if the slice operator is already installed.
+  # Checks if the slice operator is already installed.
   if [ -z "$ALREADY_INSTALLED" ]; then
     PENDING=$($HELM_CMD status kubeslice-worker \
                                -n "$NAMESPACE" 2> /dev/null | grep pending)
 
-    # Check if the installation was completed.
+    # Checks if the installation was completed.
     if [ -n "$PENDING" ]; then
       $HELM_CMD uninstall kubeslice-worker \
                           -n "$NAMESPACE"
@@ -63,7 +63,7 @@ function applySliceOperator() {
 # Main function.
 function main() {
   checkDependencies
-  applySliceOperator
+  apply
 }
 
 main

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx
+  namespace: frontend
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: nginx
+          image: nginx:latest
+          imagePullPolicy: Always
+          env:
+            - name: BACKEND_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: nginx
+                  key: BACKEND_HOST
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          volumeMounts:
+            - name: nginx-settings-template
+              mountPath: /etc/nginx/templates/default.conf.template
+              subPath: default.conf.template
+            - name: nginx-tls-certificate
+              mountPath: /etc/tls/certs/fullchain.pem
+              subPath: fullchain.pem
+            - name: nginx-tls-certificate-key
+              mountPath: /etc/tls/private/privkey.pem
+              subPath: privkey.pem
+            - name: nginx-auth
+              mountPath: /etc/nginx/conf.d/.htpasswd
+              subPath: .htpasswd
+      volumes:
+        - name: nginx-settings-template
+          configMap:
+            name: nginx-settings-template
+        - name: nginx-tls-certificate
+          configMap:
+            name: nginx-tls-certificate
+        - name: nginx-tls-certificate-key
+          configMap:
+            name: nginx-tls-certificate-key
+        - name: nginx-auth
+          configMap:
+            name: nginx-auth
