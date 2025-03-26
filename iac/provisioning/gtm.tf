@@ -4,21 +4,21 @@ locals {
 }
 
 # Creates the GTM domain.
-resource "akamai_gtm_domain" "default" {
-  name     = "${var.settings.dns.domain}.akadns.net"
+resource "akamai_gtm_domain" "slice" {
+  name     = "${var.settings.slice.gtm.domain}.akadns.net"
   type     = "weighted"
-  contract = var.settings.gtm.contract
-  group    = var.settings.gtm.group
+  contract = var.settings.slice.gtm.contract
+  group    = var.settings.slice.gtm.group
 }
 
 # Creates the GTM datacenter for the workers clusters.
-resource "akamai_gtm_datacenter" "worker" {
+resource "akamai_gtm_datacenter" "slice" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker}
 
-  domain   = akamai_gtm_domain.default.name
+  domain   = akamai_gtm_domain.slice.name
   nickname = "${each.key} - ${each.value.cloud} - ${each.value.region}"
 
-  depends_on = [ akamai_gtm_domain.default ]
+  depends_on = [ akamai_gtm_domain.slice ]
 }
 
 # Fetches the node balancer IP of the worker clusters.
@@ -28,15 +28,15 @@ data "external" "fetchWorkerNodeBalancerIp" {
   program = [
     local.fetchWorkerNodeBalancerIpScriptFilename,
     local_sensitive_file.workerKubeconfig[each.key].filename,
-    var.settings.slice.ingress
+    var.settings.slice.gtm.ingress
   ]
 
   depends_on = [ local_sensitive_file.workerKubeconfig ]
 }
 
-# Creates the GTM property.
-resource "akamai_gtm_property" "worker" {
-  domain                 = akamai_gtm_domain.default.name
+# Creates the GTM property for the slice.
+resource "akamai_gtm_property" "slice" {
+  domain                 = akamai_gtm_domain.slice.name
   name                   = var.settings.slice.identifier
   score_aggregation_type = "median"
   type                   = "weighted-round-robin"
@@ -49,7 +49,7 @@ resource "akamai_gtm_property" "worker" {
 
     content {
       enabled       = true
-      datacenter_id = akamai_gtm_datacenter.worker[traffic_target.key].datacenter_id
+      datacenter_id = akamai_gtm_datacenter.slice[traffic_target.key].datacenter_id
       servers       = [ data.external.fetchWorkerNodeBalancerIp[traffic_target.key].result.ip ]
       weight        = traffic_target.value.trafficPercentage
     }
@@ -72,8 +72,8 @@ resource "akamai_gtm_property" "worker" {
   }
 
   depends_on = [
-    akamai_gtm_domain.default,
-    akamai_gtm_datacenter.worker,
+    akamai_gtm_domain.slice,
+    akamai_gtm_datacenter.slice,
     data.external.fetchWorkerNodeBalancerIp
   ]
 }

@@ -23,15 +23,6 @@ variable "credentials" {
 
 variable "settings" {
   default = {
-    dns = {
-      domain = "<domain>"
-    }
-
-    gtm = {
-      contract = "<contract>"
-      group    = "<group>"
-    }
-
     controller = {
       project    = "multicloud"
       identifier = "controller"
@@ -41,12 +32,6 @@ variable "settings" {
       nodes = {
         type  = "g6-standard-4"
         count = 2
-      }
-
-      license = {
-        email    = "<your-email>"
-        username = "<username>"
-        password = "<password>"
       }
     }
 
@@ -68,9 +53,15 @@ variable "settings" {
 
     slice = {
       namespaces  = [ "frontend", "backend", "database" ]
-      ingress     = "frontend"
       identifier  = "demo"
       networkMask = "10.10.0.0/16"
+
+      gtm = {
+        contract = "<contract>"
+        group    = "<group>"
+        domain   = "<domain>"
+        ingress  = "frontend"
+      }
     }
 
     costManagement = {
@@ -85,11 +76,10 @@ variable "settings" {
       }
     }
 
-    firewall = {
-      allowedIps = {
-        ipv4 = [ "0.0.0.0/0" ]
-        ipv6 = []
-      }
+    license = {
+      email    = "<your-email>"
+      username = "<username>"
+      password = "<password>"
     }
   }
 }

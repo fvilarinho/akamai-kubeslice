@@ -44,9 +44,9 @@ kubeslice:
     endpoint: ${linode_lke_cluster.controller.api_endpoints[0]}
 
 imagePullSecrets:
-  username: ${var.settings.controller.license.username}
-  password: ${var.settings.controller.license.password}
-  email: ${var.settings.controller.license.email}
+  username: ${var.settings.license.username}
+  password: ${var.settings.license.password}
+  email: ${var.settings.license.email}
 EOT
 
   depends_on = [ linode_lke_cluster.controller ]
@@ -85,9 +85,9 @@ kubeslice:
     enabled: true
 
 imagePullSecrets:
-  username: ${var.settings.controller.license.username}
-  password: ${var.settings.controller.license.password}
-  email: ${var.settings.controller.license.email}
+  username: ${var.settings.license.username}
+  password: ${var.settings.license.password}
+  email: ${var.settings.license.email}
 EOT
 
   depends_on = [ null_resource.applyController ]
@@ -234,9 +234,9 @@ resource "null_resource" "generateSliceOperator" {
       PROJECT_NAME              = var.settings.controller.project
       WORKER_CLUSTER_IDENTIFIER = each.key
       WORKER_CLUSTER_ENDPOINT   = (each.value.cloud == "Akamai" ? linode_lke_cluster.worker[each.key].api_endpoints[0] : azurerm_kubernetes_cluster.worker[each.key].kube_config[0].host)
-      LICENSE_USERNAME          = var.settings.controller.license.username
-      LICENSE_PASSWORD          = var.settings.controller.license.password
-      LICENSE_EMAIL             = var.settings.controller.license.email
+      LICENSE_USERNAME          = var.settings.license.username
+      LICENSE_PASSWORD          = var.settings.license.password
+      LICENSE_EMAIL             = var.settings.license.email
     }
 
     quiet   = true
