@@ -29,7 +29,11 @@ function checkDependencies() {
 
 # Prepares the environment to execute this script.
 function prepareToExecute() {
-  source ../../functions.sh
+  cd ../../ || exit 1
+
+  source functions.sh
+
+  cd bin/demo || exit 1
 }
 
 # Applies the secrets and configmaps.

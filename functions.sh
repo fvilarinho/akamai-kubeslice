@@ -11,7 +11,7 @@ function showLabel() {
 
 # Prepares the environment to execute this script.
 function prepareToExecute() {
-  ENV_FILENAME=../etc/demo/.env
+  ENV_FILENAME=$(pwd)/etc/demo/.env
 
   if [ -e "$ENV_FILENAME" ]; then
     source "$ENV_FILENAME"
