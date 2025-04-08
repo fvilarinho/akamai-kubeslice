@@ -20,7 +20,7 @@ function fetch() {
   while true; do
     IP=$($KUBECTL_CMD get nodes -o wide | grep Ready | head -n 1 | awk -F' ' '{print $7}')
 
-    if [ -n "$IP" ]; then
+    if [[ $IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
       break
     fi
 
