@@ -4,7 +4,7 @@ locals {
   applyManagerScriptFilename             = abspath(pathexpand("../bin/applyManager.sh"))
   applyProjectScriptFilename             = abspath(pathexpand("../bin/applyProject.sh"))
   applyWorkerScriptFilename              = abspath(pathexpand("../bin/applyWorker.sh"))
-  fetchWorkerNodeIpScriptFilename        = abspath(pathexpand("../bin/fetchWorkerNodeIp.sh"))
+  fetchSliceNodeIpScriptFilename         = abspath(pathexpand("../bin/fetchSliceNodeIp.sh"))
   fetchSliceNodeBalancerIpScriptFilename = abspath(pathexpand("../bin/fetchSliceNodeBalancerIp.sh"))
   generateSliceOperatorScriptFilename    = abspath(pathexpand("../bin/generateSliceOperator.sh"))
   applySliceOperatorScriptFilename       = abspath(pathexpand("../bin/applySliceOperator.sh"))
@@ -161,11 +161,11 @@ resource "null_resource" "applyProject" {
   ]
 }
 
-data "external" "fetchWorkerNodeIp" {
+data "external" "fetchSliceNodeIp" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   program = [
-    local.fetchWorkerNodeIpScriptFilename,
+    local.fetchSliceNodeIpScriptFilename,
     local_sensitive_file.workerKubeconfig[each.key].filename
   ]
 
@@ -193,12 +193,12 @@ spec:
     telemetry:
       enabled: true
       telemetryProvider: prometheus
-      endpoint: http://${data.external.fetchWorkerNodeIp[each.key].result.ip}:32700
+      endpoint: http://${data.external.fetchSliceNodeIp[each.key].result.ip}:32700
 EOT
 
   depends_on = [
     null_resource.applyProject,
-    data.external.fetchWorkerNodeIp
+    data.external.fetchSliceNodeIp
   ]
 }
 
@@ -356,7 +356,7 @@ resource "null_resource" "applySlice" {
 }
 
 # Fetches the node balancer IP of the slice in each worker.
-data "external" "fetchSlideNodeBalancerIp" {
+data "external" "fetchSliceNodeBalancerIp" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker }
 
   program = [
@@ -395,5 +395,5 @@ resource "null_resource" "generateReadme" {
 }
 
 output "sliceNodeBalancerIp" {
-  value = data.external.fetchSlideNodeBalancerIp
+  value = data.external.fetchSliceNodeBalancerIp
 }
