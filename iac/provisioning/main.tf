@@ -1,11 +1,6 @@
 terraform {
   # Definition of required providers.
   required_providers {
-    akamai = {
-      source  = "akamai/akamai"
-      version = "6.6.0"
-    }
-
     linode = {
       source = "linode/linode"
       version = "2.31.1"

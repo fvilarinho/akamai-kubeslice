@@ -1,13 +1,5 @@
 variable "credentials" {
   default = {
-    edgegrid = {
-      accountKey   = "<account>"
-      host         = "<host>"
-      accessToken  = "<accessToken>"
-      clientToken  = "<clientToken>"
-      clientSecret = "<clientSecret>"
-    }
-
     linode = {
       token = "<token>"
     }
@@ -46,8 +38,6 @@ variable "settings" {
           type  = "g6-standard-4"
           count = 3
         }
-
-        trafficPercentage = 100
       }
     ]
 
@@ -55,13 +45,7 @@ variable "settings" {
       namespaces  = [ "frontend", "backend", "database" ]
       identifier  = "demo"
       networkMask = "10.10.0.0/16"
-
-      gtm = {
-        contract = "<contract>"
-        group    = "<group>"
-        domain   = "<domain>"
-        ingress  = "frontend"
-      }
+      ingress     = "frontend"
     }
 
     costManagement = {

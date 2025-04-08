@@ -1,42 +1,20 @@
-# Required local variables.
-locals {
-  fetchWorkerNodeBalancerIpScriptFilename = abspath(pathexpand("../bin/fetchWorkerNodeBalancerIp.sh"))
-}
-
-# Creates the GTM domain.
-resource "akamai_gtm_domain" "slice" {
-  name     = "${var.settings.slice.gtm.domain}.akadns.net"
-  type     = "weighted"
-  contract = var.settings.slice.gtm.contract
-  group    = var.settings.slice.gtm.group
+data "akamai_gtm_domain" "slice" {
+  name = "${var.settings.slice.gtm.domain}.akadns.net"
 }
 
 # Creates the GTM datacenter for the workers clusters.
 resource "akamai_gtm_datacenter" "slice" {
   for_each = { for worker in var.settings.workers : worker.identifier => worker}
 
-  domain   = akamai_gtm_domain.slice.name
+  domain   = data.akamai_gtm_domain.slice.name
   nickname = "${each.key} - ${each.value.cloud} - ${each.value.region}"
 
-  depends_on = [ akamai_gtm_domain.slice ]
-}
-
-# Fetches the node balancer IP of the worker clusters.
-data "external" "fetchWorkerNodeBalancerIp" {
-  for_each = { for worker in var.settings.workers : worker.identifier => worker }
-
-  program = [
-    local.fetchWorkerNodeBalancerIpScriptFilename,
-    local_sensitive_file.workerKubeconfig[each.key].filename,
-    var.settings.slice.gtm.ingress
-  ]
-
-  depends_on = [ local_sensitive_file.workerKubeconfig ]
+  depends_on = [ data.akamai_gtm_domain.slice ]
 }
 
 # Creates the GTM property for the slice.
 resource "akamai_gtm_property" "slice" {
-  domain                 = akamai_gtm_domain.slice.name
+  domain                 = data.akamai_gtm_domain.slice.name
   name                   = var.settings.slice.identifier
   score_aggregation_type = "median"
   type                   = "weighted-round-robin"
@@ -50,7 +28,7 @@ resource "akamai_gtm_property" "slice" {
     content {
       enabled       = true
       datacenter_id = akamai_gtm_datacenter.slice[traffic_target.key].datacenter_id
-      servers       = [ data.external.fetchWorkerNodeBalancerIp[traffic_target.key].result.ip ]
+      servers       = [ var.sliceNodeBalancerIp[traffic_target.key].result.ip ]
       weight        = traffic_target.value.trafficPercentage
     }
   }
@@ -72,8 +50,8 @@ resource "akamai_gtm_property" "slice" {
   }
 
   depends_on = [
-    akamai_gtm_domain.slice,
+    data.akamai_gtm_domain.slice,
     akamai_gtm_datacenter.slice,
-    data.external.fetchWorkerNodeBalancerIp
+    var.sliceNodeBalancerIp
   ]
 }

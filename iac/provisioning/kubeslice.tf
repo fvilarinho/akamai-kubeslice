@@ -1,14 +1,15 @@
 # Required local variables.
 locals {
-  applyControllerScriptFilename       = abspath(pathexpand("../bin/applyController.sh"))
-  applyManagerScriptFilename          = abspath(pathexpand("../bin/applyManager.sh"))
-  applyProjectScriptFilename          = abspath(pathexpand("../bin/applyProject.sh"))
-  applyWorkerScriptFilename           = abspath(pathexpand("../bin/applyWorker.sh"))
-  fetchWorkerNodeIpScriptFilename     = abspath(pathexpand("../bin/fetchWorkerNodeIp.sh"))
-  generateSliceOperatorScriptFilename = abspath(pathexpand("../bin/generateSliceOperator.sh"))
-  applySliceOperatorScriptFilename    = abspath(pathexpand("../bin/applySliceOperator.sh"))
-  applySliceScriptFilename            = abspath(pathexpand("../bin/applySlice.sh"))
-  generateReadmeScriptFilename        = abspath(pathexpand("../bin/generateReadme.sh"))
+  applyControllerScriptFilename          = abspath(pathexpand("../bin/applyController.sh"))
+  applyManagerScriptFilename             = abspath(pathexpand("../bin/applyManager.sh"))
+  applyProjectScriptFilename             = abspath(pathexpand("../bin/applyProject.sh"))
+  applyWorkerScriptFilename              = abspath(pathexpand("../bin/applyWorker.sh"))
+  fetchWorkerNodeIpScriptFilename        = abspath(pathexpand("../bin/fetchWorkerNodeIp.sh"))
+  fetchSliceNodeBalancerIpScriptFilename = abspath(pathexpand("../bin/fetchSliceNodeBalancerIp.sh"))
+  generateSliceOperatorScriptFilename    = abspath(pathexpand("../bin/generateSliceOperator.sh"))
+  applySliceOperatorScriptFilename       = abspath(pathexpand("../bin/applySliceOperator.sh"))
+  applySliceScriptFilename               = abspath(pathexpand("../bin/applySlice.sh"))
+  generateReadmeScriptFilename           = abspath(pathexpand("../bin/generateReadme.sh"))
 
   sliceWorkers = [ for worker in var.settings.workers : <<EOT
     - ${worker.identifier}
@@ -110,7 +111,10 @@ resource "null_resource" "applyManager" {
     command = local.applyManagerScriptFilename
   }
 
-  depends_on = [ local_file.manager ]
+  depends_on = [
+    local_sensitive_file.controllerKubeconfig,
+    local_file.manager
+  ]
 }
 
 # Project manifest.
@@ -151,7 +155,10 @@ resource "null_resource" "applyProject" {
     command = local.applyProjectScriptFilename
   }
 
-  depends_on = [ local_file.project ]
+  depends_on = [
+    local_sensitive_file.controllerKubeconfig,
+    local_file.project
+  ]
 }
 
 data "external" "fetchWorkerNodeIp" {
@@ -191,7 +198,6 @@ EOT
 
   depends_on = [
     null_resource.applyProject,
-    local_sensitive_file.workerKubeconfig,
     data.external.fetchWorkerNodeIp
   ]
 }
@@ -216,7 +222,10 @@ resource "null_resource" "applyWorker" {
     command = local.applyWorkerScriptFilename
   }
 
-  depends_on = [ local_file.worker ]
+  depends_on = [
+    local_sensitive_file.controllerKubeconfig,
+    local_file.worker
+  ]
 }
 
 # Creates the slice operator installation manifest.
@@ -243,7 +252,12 @@ resource "null_resource" "generateSliceOperator" {
     command = local.generateSliceOperatorScriptFilename
   }
 
-  depends_on = [ null_resource.applyWorker ]
+  depends_on = [
+    local_sensitive_file.controllerKubeconfig,
+    linode_lke_cluster.worker,
+    azurerm_kubernetes_cluster.worker,
+    null_resource.applyWorker
+  ]
 }
 
 # Applies the slice operator manifest in the worker.
@@ -266,6 +280,7 @@ resource "null_resource" "applySliceOperator" {
   }
 
   depends_on = [
+    local_sensitive_file.workerKubeconfig,
     null_resource.applyIstio,
     null_resource.applyPrometheus,
     null_resource.generateSliceOperator
@@ -334,9 +349,25 @@ resource "null_resource" "applySlice" {
   }
 
   depends_on = [
-    local_sensitive_file.workerKubeconfig,
+    local_sensitive_file.controllerKubeconfig,
     local_file.slice,
     null_resource.applySliceOperator
+  ]
+}
+
+# Fetches the node balancer IP of the slice in each worker.
+data "external" "fetchSlideNodeBalancerIp" {
+  for_each = { for worker in var.settings.workers : worker.identifier => worker }
+
+  program = [
+    local.fetchSliceNodeBalancerIpScriptFilename,
+    local_sensitive_file.workerKubeconfig[each.key].filename,
+    var.settings.slice.ingress
+  ]
+
+  depends_on = [
+    local_sensitive_file.workerKubeconfig,
+    null_resource.applySlice
   ]
 }
 
@@ -357,5 +388,12 @@ resource "null_resource" "generateReadme" {
     command = local.generateReadmeScriptFilename
   }
 
-  depends_on = [ null_resource.applySlice ]
+  depends_on = [
+    local_sensitive_file.controllerKubeconfig,
+    null_resource.applySlice
+  ]
+}
+
+output "sliceNodeBalancerIp" {
+  value = data.external.fetchSlideNodeBalancerIp
 }
