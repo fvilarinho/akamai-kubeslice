@@ -30,7 +30,7 @@ function fetch() {
   while true; do
     IP=$($KUBECTL_CMD get svc -n $NAMESPACE | grep LoadBalancer | awk -F' ' '{print $4}')
 
-    if [ -n "$IP" ]; then
+    if [[ $IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
       break
     fi
 
