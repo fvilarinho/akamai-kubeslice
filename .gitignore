@@ -11,6 +11,7 @@
 /etc/slice.yaml
 /etc/*-sliceOperator.yaml
 /etc/*-worker.yaml
+/etc/*-vpcServiceImport.yaml
 /iac/.terraform*
 /iac/terraform.tfvars
 /iac/terraform.tfstate*
