@@ -44,7 +44,7 @@ function applyFrontendConfigMaps() {
                                 --dry-run=client | $KUBECTL_CMD apply -f -
 
   $KUBECTL_CMD create configmap nginx-auth \
-                                --from-file=.htpasswd=../../etc/demo/frontend/conf.d/.htpasswd \
+                                --from-file=.htpasswd=../../etc/demo/frontend/.htpasswd \
                                 -n frontend \
                                 -o yaml \
                                 --dry-run=client | $KUBECTL_CMD apply -f -

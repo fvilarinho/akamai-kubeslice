@@ -29,7 +29,7 @@ function applyDatabaseSecrets() {
 # Applies the backend secrets.
 function applyBackendSecrets() {
   $KUBECTL_CMD create secret generic phonebook \
-                                     --from-literal=DB_HOST=$DB_HOST.database.svc.cluster.local \
+                                     --from-literal=DB_HOST=$DB_HOST \
                                      --from-literal=DB_USER=$DB_USER \
                                      --from-literal=DB_PASS=$DB_PASS \
                                      --from-literal=DB_NAME=$DB_NAME \
@@ -41,7 +41,7 @@ function applyBackendSecrets() {
 # Applies the frontend secrets.
 function applyFrontendSecrets() {
   $KUBECTL_CMD create secret generic nginx \
-                                     --from-literal=BACKEND_HOST=$BACKEND_HOST.backend.svc.cluster.local \
+                                     --from-literal=BACKEND_HOST=$BACKEND_HOST \
                                      -n frontend \
                                      -o yaml \
                                      --dry-run=client | $KUBECTL_CMD apply -f -
